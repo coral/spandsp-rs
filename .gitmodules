@@ -1,0 +1,3 @@
+[submodule "vendor/spandsp"]
+	path = spandsp-sys/vendor
+	url = https://github.com/freeswitch/spandsp.git

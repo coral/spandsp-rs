@@ -1,0 +1,16 @@
+[package]
+name = "spandsp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spandsp-sys = { path = "../spandsp-sys" }
+bitflags = "2"
+thiserror = "2"
+
+[features]
+default = ["fax"]
+fax = ["spandsp-sys/fax"]
+v32bis = ["spandsp-sys/v32bis"]
+v34 = ["spandsp-sys/v34"]
+ssl-fax = ["spandsp-sys/ssl-fax"]

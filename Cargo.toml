@@ -1,0 +1,3 @@
+[workspace]
+members = ["spandsp-sys", "spandsp"]
+resolver = "2"

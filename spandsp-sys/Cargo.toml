@@ -1,0 +1,17 @@
+[package]
+name = "spandsp-sys"
+version = "0.1.0"
+edition = "2024"
+links = "spandsp"
+
+[build-dependencies]
+cc = "1"
+bindgen = "0.72"
+pkg-config = "0.3"
+
+[features]
+default = ["fax"]
+fax = []
+v32bis = []
+v34 = []
+ssl-fax = ["fax"]
