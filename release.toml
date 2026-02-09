@@ -1,0 +1,13 @@
+## cargo-release workspace configuration
+## Usage: cargo release <major|minor|patch> --execute
+
+# Bump both crates in one commit instead of two
+consolidate-commits = true
+pre-release-commit-message = "chore: Release"
+tag-message = "chore: Release {{crate_name}} version {{version}}"
+
+# When spandsp-sys bumps, auto-upgrade the version in spandsp's dep
+dependent-version = "upgrade"
+
+# Only release from master
+allow-branch = ["master"]
