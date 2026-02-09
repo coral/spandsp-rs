@@ -9,7 +9,7 @@ description = "Safe Rust wrappers for the spandsp telephony DSP library"
 repository = "https://github.com/coral/spandsp-rs"
 
 [dependencies]
-spandsp-sys = { version = "0.1.0" }
+spandsp-sys = { version = "0.1.1", path = "../spandsp-sys" }
 bitflags = "2"
 thiserror = "2"
 
