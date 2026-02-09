@@ -1,3 +1,6 @@
 [workspace]
 members = ["spandsp-sys", "spandsp"]
 resolver = "2"
+
+[patch.crates-io]
+spandsp-sys = { path = "spandsp-sys" }

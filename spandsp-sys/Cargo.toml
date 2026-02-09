@@ -3,6 +3,11 @@ name = "spandsp-sys"
 version = "0.1.0"
 edition = "2024"
 links = "spandsp"
+license = "MIT"
+keywords = ["telephony", "dsp", "fax", "ffi", "spandsp"]
+categories = ["external-ffi-bindings", "multimedia::audio"]
+description = "Raw FFI bindings for the spandsp telephony DSP library"
+repository = "https://github.com/coral/spandsp-rs"
 
 [build-dependencies]
 cc = "1"

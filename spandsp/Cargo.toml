@@ -2,9 +2,14 @@
 name = "spandsp"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+keywords = ["telephony", "dsp", "fax", "codec", "dtmf"]
+categories = ["api-bindings", "multimedia::audio"]
+description = "Safe Rust wrappers for the spandsp telephony DSP library"
+repository = "https://github.com/coral/spandsp-rs"
 
 [dependencies]
-spandsp-sys = { path = "../spandsp-sys" }
+spandsp-sys = { version = "0.1.0" }
 bitflags = "2"
 thiserror = "2"
 
