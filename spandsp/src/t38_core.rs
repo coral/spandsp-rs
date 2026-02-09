@@ -389,6 +389,11 @@ impl T38Core {
     }
 }
 
+// SAFETY: T38Core wraps a SpanDSP t38_core_state_t that is only accessed
+// through &self/&mut self methods. The underlying C library is not thread-safe,
+// but exclusive access can be guaranteed externally (e.g., via tokio::sync::Mutex).
+unsafe impl Send for T38Core {}
+
 impl Drop for T38Core {
     fn drop(&mut self) {
         if self.owned {

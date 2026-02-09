@@ -91,6 +91,11 @@ impl T38Terminal {
     }
 }
 
+// SAFETY: T38Terminal wraps a SpanDSP t38_terminal_state_t that is only accessed
+// through &self/&mut self methods. The underlying C library is not thread-safe,
+// but exclusive access can be guaranteed externally (e.g., via tokio::sync::Mutex).
+unsafe impl Send for T38Terminal {}
+
 impl Drop for T38Terminal {
     fn drop(&mut self) {
         unsafe {
