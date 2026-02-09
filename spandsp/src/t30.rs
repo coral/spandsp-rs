@@ -155,6 +155,32 @@ impl T30State {
         }
     }
 
+    /// Set supported T.4/T.6 compression types for negotiation.
+    ///
+    /// The `compressions` parameter is a bitmask of `T4_COMPRESSION_*` constants
+    /// from `spandsp_sys` (e.g., `T4_COMPRESSION_T4_1D | T4_COMPRESSION_T4_2D | T4_COMPRESSION_T6`).
+    pub fn set_supported_compressions(&self, compressions: i32) -> Result<()> {
+        let rc = unsafe {
+            spandsp_sys::t30_set_supported_compressions(self.inner.as_ptr(), compressions)
+        };
+        if rc != 0 {
+            return Err(SpanDspError::ErrorCode(rc));
+        }
+        Ok(())
+    }
+
+    /// Set supported image sizes for negotiation.
+    ///
+    /// The `sizes` parameter is a bitmask of `T4_SUPPORT_WIDTH_*` and related
+    /// constants from `spandsp_sys`.
+    pub fn set_supported_image_sizes(&self, sizes: i32) -> Result<()> {
+        let rc = unsafe { spandsp_sys::t30_set_supported_image_sizes(self.inner.as_ptr(), sizes) };
+        if rc != 0 {
+            return Err(SpanDspError::ErrorCode(rc));
+        }
+        Ok(())
+    }
+
     /// Check if the T.30 call is still active.
     pub fn call_active(&self) -> bool {
         unsafe { spandsp_sys::t30_call_active(self.inner.as_ptr()) != 0 }

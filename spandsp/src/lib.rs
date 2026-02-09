@@ -6,6 +6,8 @@
 //! echo cancellation, power metering, and (with the `fax` feature) full
 //! T.30/T.38/T.4 fax support.
 
+pub use spandsp_sys;
+
 pub mod error;
 pub mod logging;
 
@@ -31,6 +33,8 @@ pub mod t38_core;
 pub mod t38_gateway;
 #[cfg(feature = "fax")]
 pub mod t38_terminal;
+#[cfg(feature = "fax")]
+pub mod t4;
 #[cfg(feature = "fax")]
 pub mod t4_rx;
 #[cfg(feature = "fax")]

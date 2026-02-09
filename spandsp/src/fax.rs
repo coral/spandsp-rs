@@ -76,6 +76,11 @@ impl FaxState {
     }
 }
 
+// SAFETY: FaxState wraps a SpanDSP fax_state_t that is only accessed through
+// &self/&mut self methods. The underlying C library is not thread-safe, but
+// exclusive access can be guaranteed externally (e.g., via tokio::sync::Mutex).
+unsafe impl Send for FaxState {}
+
 impl Drop for FaxState {
     fn drop(&mut self) {
         unsafe {
