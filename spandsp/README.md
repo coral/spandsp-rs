@@ -13,12 +13,10 @@ Safe Rust wrappers for [spandsp](https://github.com/freeswitch/spandsp).
 - Logging
 - **`fax` feature (default):** T.30, T.38 core/terminal/gateway, T.4 encode/decode, fax modems
 
-## Dependencies
-
-- `spandsp-sys` (raw FFI bindings)
-- `bitflags` 2
-- `thiserror` 2
-
 ## License
 
 MIT
+
+## AI DISCLAIMER
+
+Bro this is slop city deluxe. I heavily supervised but it's 2026 get real. **No warranties express or implied** etc etc.

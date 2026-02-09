@@ -1,3 +1,11 @@
+//! Safe, idiomatic Rust wrappers for the [spandsp](https://github.com/freeswitch/spandsp)
+//! telephony DSP library.
+//!
+//! Provides RAII-managed types for codecs (G.711, G.722, G.726), DTMF
+//! generation/detection, HDLC framing, tone generation, Goertzel detection,
+//! echo cancellation, power metering, and (with the `fax` feature) full
+//! T.30/T.38/T.4 fax support.
+
 pub mod error;
 pub mod logging;
 

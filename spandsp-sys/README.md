@@ -19,7 +19,12 @@ Raw FFI bindings for [spandsp](https://github.com/freeswitch/spandsp), auto-gene
 
 - C toolchain
 - bindgen 0.72+
+- **`fax` feature:** libtiff, libjpeg (found via pkg-config)
 
 ## License
 
 MIT
+
+## AI DISCLAIMER
+
+Bro this is slop city deluxe. I heavily supervised but it's 2026 get real. **No warranties express or implied** etc etc.

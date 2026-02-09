@@ -16,16 +16,27 @@ use crate::error::{Result, SpanDspError};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(i32)]
 pub enum LogLevel {
+    /// Logging disabled.
     None = 0,
+    /// Error messages.
     Error = 1,
+    /// Warning messages.
     Warning = 2,
+    /// Protocol-level error messages.
     ProtocolError = 3,
+    /// Protocol-level warning messages.
     ProtocolWarning = 4,
+    /// General protocol flow tracing.
     Flow = 5,
+    /// Detailed protocol flow tracing.
     Flow2 = 6,
+    /// Verbose protocol flow tracing.
     Flow3 = 7,
+    /// General debug messages.
     Debug = 8,
+    /// Detailed debug messages.
     Debug2 = 9,
+    /// Verbose debug messages.
     Debug3 = 10,
 }
 

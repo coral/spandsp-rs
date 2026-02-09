@@ -17,7 +17,9 @@ use crate::error::{Result, SpanDspError};
 /// - `level`: signal level in dBm0 (or modulation depth % for AM).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ToneFreq {
+    /// Tone frequency in Hz. Use 0 for none, negative for AM modulation.
     pub frequency: i32,
+    /// Signal level in dBm0 (or modulation depth % for AM).
     pub level: i32,
 }
 
@@ -54,9 +56,13 @@ impl fmt::Display for ToneFreq {
 /// with `on2` / `off2` for more complex patterns (e.g. distinctive ring).
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ToneCadence {
+    /// First on-period duration in milliseconds.
     pub on1: i32,
+    /// First off-period duration in milliseconds.
     pub off1: i32,
+    /// Second on-period duration in milliseconds (0 if unused).
     pub on2: i32,
+    /// Second off-period duration in milliseconds (0 if unused).
     pub off2: i32,
 }
 

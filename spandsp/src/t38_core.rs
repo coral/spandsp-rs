@@ -14,9 +14,13 @@ use crate::error::{Result, SpanDspError};
 pub struct T38Indicator(pub spandsp_sys::t30_indicator_types_e);
 
 impl T38Indicator {
+    /// No signal present.
     pub const NO_SIGNAL: Self = Self(spandsp_sys::t30_indicator_types_e::T38_IND_NO_SIGNAL);
+    /// CNG (calling) tone detected.
     pub const CNG: Self = Self(spandsp_sys::t30_indicator_types_e::T38_IND_CNG);
+    /// CED (called) tone detected.
     pub const CED: Self = Self(spandsp_sys::t30_indicator_types_e::T38_IND_CED);
+    /// V.21 preamble flags detected.
     pub const V21_PREAMBLE: Self = Self(spandsp_sys::t30_indicator_types_e::T38_IND_V21_PREAMBLE);
 }
 
@@ -69,14 +73,23 @@ impl From<T38Indicator> for i32 {
 pub struct T38DataType(pub spandsp_sys::t38_data_types_e);
 
 impl T38DataType {
+    /// V.21 (300 bps) HDLC signalling.
     pub const V21: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V21);
+    /// V.27ter at 2400 bps.
     pub const V27TER_2400: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V27TER_2400);
+    /// V.27ter at 4800 bps.
     pub const V27TER_4800: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V27TER_4800);
+    /// V.29 at 7200 bps.
     pub const V29_7200: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V29_7200);
+    /// V.29 at 9600 bps.
     pub const V29_9600: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V29_9600);
+    /// V.17 at 7200 bps.
     pub const V17_7200: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V17_7200);
+    /// V.17 at 9600 bps.
     pub const V17_9600: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V17_9600);
+    /// V.17 at 12000 bps.
     pub const V17_12000: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V17_12000);
+    /// V.17 at 14400 bps.
     pub const V17_14400: Self = Self(spandsp_sys::t38_data_types_e::T38_DATA_V17_14400);
 }
 
@@ -122,12 +135,18 @@ impl From<T38DataType> for i32 {
 pub struct T38FieldType(pub spandsp_sys::t38_field_types_e);
 
 impl T38FieldType {
+    /// HDLC data field.
     pub const HDLC_DATA: Self = Self(spandsp_sys::t38_field_types_e::T38_FIELD_HDLC_DATA);
+    /// End of HDLC signal.
     pub const HDLC_SIG_END: Self = Self(spandsp_sys::t38_field_types_e::T38_FIELD_HDLC_SIG_END);
+    /// HDLC frame with correct FCS.
     pub const HDLC_FCS_OK: Self = Self(spandsp_sys::t38_field_types_e::T38_FIELD_HDLC_FCS_OK);
+    /// HDLC frame with bad FCS.
     pub const HDLC_FCS_BAD: Self = Self(spandsp_sys::t38_field_types_e::T38_FIELD_HDLC_FCS_BAD);
+    /// T.4 non-ECM image data.
     pub const T4_NON_ECM_DATA: Self =
         Self(spandsp_sys::t38_field_types_e::T38_FIELD_T4_NON_ECM_DATA);
+    /// End of T.4 non-ECM signal.
     pub const T4_NON_ECM_SIG_END: Self =
         Self(spandsp_sys::t38_field_types_e::T38_FIELD_T4_NON_ECM_SIG_END);
 }
@@ -212,9 +231,13 @@ pub enum T38PacketCategory {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
 pub enum T38Version {
+    /// T.38 version 0 (original, 1998).
     V0 = 0,
+    /// T.38 version 1.
     V1 = 1,
+    /// T.38 version 2.
     V2 = 2,
+    /// T.38 version 3 (2004 revision with V.34 support).
     V3 = 3,
 }
 
@@ -222,7 +245,9 @@ pub enum T38Version {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
 pub enum T38DataRateManagement {
+    /// Local TCF: training check performed locally at the gateway.
     LocalTcf = 1,
+    /// Transferred TCF: training check passed through to the remote endpoint.
     TransferredTcf = 2,
 }
 

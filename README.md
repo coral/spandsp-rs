@@ -26,3 +26,7 @@ Rust bindings for [spandsp](https://github.com/freeswitch/spandsp), a DSP librar
 ## License
 
 MIT
+
+## AI DISCLAIMER
+
+Bro this is slop city deluxe. I heavily supervised but it's 2026 get real. **No warranties express or implied** etc etc.
