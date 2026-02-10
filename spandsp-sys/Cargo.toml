@@ -9,6 +9,23 @@ categories = ["external-ffi-bindings", "multimedia::audio"]
 description = "Raw FFI bindings for the spandsp telephony DSP library"
 repository = "https://github.com/coral/spandsp-rs"
 
+exclude = [
+    "vendor/test-data/",
+    "vendor/tests/",
+    "vendor/doc/",
+    "vendor/debian/",
+    "vendor/m4/",
+    "vendor/spandsp-sim/",
+    "vendor/win/",
+    "vendor/config/",
+    "vendor/src/msvc/",
+    "vendor/.github/",
+    "vendor/*.sh",
+    "vendor/*.spec",
+    "vendor/*.ac",
+    "vendor/*.am",
+]
+
 [build-dependencies]
 cc = "1"
 bindgen = "0.72"
