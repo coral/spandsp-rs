@@ -553,6 +553,7 @@ fn compile_c_sources(
         .warnings(false)
         .std("c99")
         .define("HAVE_CONFIG_H", None)
+        .define("_GNU_SOURCE", None)
         .include(out_dir)
         .include(vendor_src);
 
