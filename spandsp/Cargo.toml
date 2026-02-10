@@ -1,6 +1,6 @@
 [package]
 name = "spandsp"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 license = "MIT"
 keywords = ["telephony", "dsp", "fax", "codec", "dtmf"]
@@ -9,7 +9,7 @@ description = "Safe Rust wrappers for the spandsp telephony DSP library"
 repository = "https://github.com/coral/spandsp-rs"
 
 [dependencies]
-spandsp-sys = { version = "0.1.4", path = "../spandsp-sys" }
+spandsp-sys = { version = "0.1.5", path = "../spandsp-sys" }
 bitflags = "2"
 thiserror = "2"
 
