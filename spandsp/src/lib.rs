@@ -39,3 +39,11 @@ pub mod t4;
 pub mod t4_rx;
 #[cfg(feature = "fax")]
 pub mod t4_tx;
+
+#[cfg(feature = "fax")]
+pub mod receive_recovery;
+#[cfg(feature = "fax")]
+pub use receive_recovery::{
+    ReceiveCompletion, ReceiveOutputError, ReceivePage, ReceivePageKind, ReceiveRecovery,
+    ReceiveReport,
+};

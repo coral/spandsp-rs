@@ -8,10 +8,12 @@ use std::ptr::NonNull;
 use crate::error::{Result, SpanDspError};
 use crate::t30::T30State;
 use crate::t38_core::{T38Core, T38TerminalOptions};
+use crate::{ReceiveRecovery, ReceiveReport};
 
 /// T.38 terminal state wrapping `t38_terminal_state_t`.
 pub struct T38Terminal {
     inner: NonNull<spandsp_sys::t38_terminal_state_t>,
+    report: Option<ReceiveReport>,
 }
 
 impl T38Terminal {
@@ -19,7 +21,9 @@ impl T38Terminal {
     ///
     /// # Safety
     /// `tx_packet_handler` and `tx_packet_user_data` must remain valid for
-    /// the lifetime of this object.
+    /// until finalization returns or this object is dropped. Callbacks must
+    /// not unwind, reenter, or concurrently access this object. Callback storage
+    /// must be safe on any thread to which the terminal is moved.
     pub unsafe fn new_raw(
         calling_party: bool,
         tx_packet_handler: spandsp_sys::t38_tx_packet_handler_t,
@@ -33,8 +37,47 @@ impl T38Terminal {
                 tx_packet_user_data,
             );
             let inner = NonNull::new(ptr).ok_or(SpanDspError::InitFailed)?;
-            Ok(Self { inner })
+            Ok(Self {
+                inner,
+                report: None,
+            })
         }
+    }
+
+    /// Construct an answering receiver with its policy fixed before any media.
+    ///
+    /// # Safety
+    /// Packet callback storage must survive until `finalize_receive` returns or
+    /// the terminal is dropped. Callbacks must not unwind or reenter this owner,
+    /// and must be safe on any thread to which the terminal is moved.
+    pub unsafe fn new_receiver_raw(
+        policy: ReceiveRecovery,
+        tx_packet_handler: spandsp_sys::t38_tx_packet_handler_t,
+        tx_packet_user_data: *mut std::ffi::c_void,
+    ) -> Result<Self> {
+        unsafe {
+            let state = Self::new_raw(false, tx_packet_handler, tx_packet_user_data)?;
+            spandsp_sys::t30_set_receive_recovery(
+                spandsp_sys::t38_terminal_get_t30_state(state.inner.as_ptr()),
+                (policy == ReceiveRecovery::PreserveDecodedRows) as i32,
+            );
+            Ok(state)
+        }
+    }
+
+    /// Stop reception and close TIFF output, without synthesizing phase E.
+    /// Repeated calls return the same cached report and never append pages.
+    /// The owner cannot be restarted afterward. All borrowed handles must have
+    /// ended; callback user data may be released after this call returns.
+    pub fn finalize_receive(&mut self) -> &ReceiveReport {
+        if self.report.is_none() {
+            self.report = Some(unsafe {
+                crate::receive_recovery::finalize(spandsp_sys::t38_terminal_get_t30_state(
+                    self.inner.as_ptr(),
+                ))
+            });
+        }
+        self.report.as_ref().unwrap()
     }
 
     /// Get the raw pointer.
@@ -42,14 +85,17 @@ impl T38Terminal {
         self.inner.as_ptr()
     }
 
-    /// Get a (non-owned) handle to the T.30 engine.
-    pub fn get_t30_state(&self) -> Result<T30State> {
+    /// Borrow a handle to the T.30 engine.
+    pub fn get_t30_state(&self) -> Result<T30State<'_>> {
         let ptr = unsafe { spandsp_sys::t38_terminal_get_t30_state(self.inner.as_ptr()) };
         unsafe { T30State::from_raw(ptr, false) }
     }
 
-    /// Get a (non-owned) handle to the T.38 core IFP engine.
-    pub fn get_t38_core_state(&self) -> Result<T38Core> {
+    /// Borrow a handle to the T.38 core IFP engine.
+    pub fn get_t38_core_state(&self) -> Result<T38Core<'_>> {
+        if self.report.is_some() {
+            return Err(SpanDspError::InvalidInput("receiver finalized".into()));
+        }
         let ptr = unsafe { spandsp_sys::t38_terminal_get_t38_core_state(self.inner.as_ptr()) };
         unsafe { T38Core::from_raw(ptr) }
     }
@@ -57,6 +103,9 @@ impl T38Terminal {
     /// Drive the T.38 terminal's timer. Call periodically with the number of
     /// audio-equivalent samples elapsed.
     pub fn send_timeout(&self, samples: i32) -> i32 {
+        if self.report.is_some() {
+            return 1;
+        }
         unsafe { spandsp_sys::t38_terminal_send_timeout(self.inner.as_ptr(), samples) }
     }
 
@@ -82,7 +131,10 @@ impl T38Terminal {
     }
 
     /// Restart the terminal.
-    pub fn restart(&self, calling_party: bool) -> Result<()> {
+    pub fn restart(&mut self, calling_party: bool) -> Result<()> {
+        if self.report.is_some() {
+            return Err(SpanDspError::InvalidInput("receiver finalized".into()));
+        }
         let rc = unsafe { spandsp_sys::t38_terminal_restart(self.inner.as_ptr(), calling_party) };
         if rc != 0 {
             return Err(SpanDspError::ErrorCode(rc));

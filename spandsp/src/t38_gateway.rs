@@ -42,7 +42,7 @@ impl T38Gateway {
     }
 
     /// Get a (non-owned) handle to the T.38 core IFP engine.
-    pub fn get_t38_core_state(&self) -> Result<T38Core> {
+    pub fn get_t38_core_state(&self) -> Result<T38Core<'_>> {
         let ptr = unsafe { spandsp_sys::t38_gateway_get_t38_core_state(self.inner.as_ptr()) };
         unsafe { T38Core::from_raw(ptr) }
     }

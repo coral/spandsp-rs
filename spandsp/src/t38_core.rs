@@ -256,12 +256,13 @@ pub enum T38DataRateManagement {
 /// This is typically obtained via `T38Terminal::get_t38_core_state()` or
 /// `T38Gateway::get_t38_core_state()` rather than created directly, but
 /// can also be created standalone for custom T.38 implementations.
-pub struct T38Core {
+pub struct T38Core<'a> {
+    _owner: std::marker::PhantomData<&'a std::cell::Cell<()>>,
     inner: NonNull<spandsp_sys::t38_core_state_t>,
     owned: bool,
 }
 
-impl T38Core {
+impl<'a> T38Core<'a> {
     /// Create a new T.38 core context with raw callback pointers.
     ///
     /// # Safety
@@ -286,19 +287,24 @@ impl T38Core {
                 tx_packet_user_data,
             );
             let inner = NonNull::new(ptr).ok_or(SpanDspError::InitFailed)?;
-            Ok(Self { inner, owned: true })
+            Ok(Self {
+                inner,
+                owned: true,
+                _owner: std::marker::PhantomData,
+            })
         }
     }
 
     /// Wrap a non-owned pointer (e.g. from a T38Terminal or T38Gateway).
     ///
     /// # Safety
-    /// The pointer must be valid. The object will NOT be freed on drop.
+    /// The pointer must be valid for the entire chosen lifetime. Aliases must not be used concurrently or reentrantly. The object will NOT be freed on drop.
     pub unsafe fn from_raw(ptr: *mut spandsp_sys::t38_core_state_t) -> Result<Self> {
         let inner = NonNull::new(ptr).ok_or(SpanDspError::InitFailed)?;
         Ok(Self {
             inner,
             owned: false,
+            _owner: std::marker::PhantomData,
         })
     }
 
@@ -389,12 +395,7 @@ impl T38Core {
     }
 }
 
-// SAFETY: T38Core wraps a SpanDSP t38_core_state_t that is only accessed
-// through &self/&mut self methods. The underlying C library is not thread-safe,
-// but exclusive access can be guaranteed externally (e.g., via tokio::sync::Mutex).
-unsafe impl Send for T38Core {}
-
-impl Drop for T38Core {
+impl Drop for T38Core<'_> {
     fn drop(&mut self) {
         if self.owned {
             unsafe {

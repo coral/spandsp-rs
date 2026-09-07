@@ -20,3 +20,8 @@ MIT
 ## AI DISCLAIMER
 
 Bro this is slop city deluxe. I heavily supervised but it's 2026 get real. **No warranties express or implied** etc etc.
+
+## Receive recovery
+
+Version 0.2.0 adds opt-in preservation of decoded rows and explicit receiver
+finalization. See [the API and migration guide](RECEIVE_RECOVERY.md).

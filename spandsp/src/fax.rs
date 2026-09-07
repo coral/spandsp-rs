@@ -8,12 +8,14 @@ use std::ptr::NonNull;
 
 use crate::error::{Result, SpanDspError};
 use crate::t30::T30State;
+use crate::{ReceiveRecovery, ReceiveReport};
 
 /// High-level analog FAX state wrapping `fax_state_t`.
 ///
 /// Created via `FaxState::new()`, freed on drop.
 pub struct FaxState {
     inner: NonNull<spandsp_sys::fax_state_t>,
+    report: Option<ReceiveReport>,
 }
 
 impl FaxState {
@@ -23,7 +25,37 @@ impl FaxState {
     pub fn new(calling_party: bool) -> Result<Self> {
         let ptr = unsafe { spandsp_sys::fax_init(std::ptr::null_mut(), calling_party) };
         let inner = NonNull::new(ptr).ok_or(SpanDspError::InitFailed)?;
-        Ok(Self { inner })
+        Ok(Self {
+            inner,
+            report: None,
+        })
+    }
+
+    /// Construct an answering receiver with its policy fixed before any media.
+    pub fn new_receiver(policy: ReceiveRecovery) -> Result<Self> {
+        let state = Self::new(false)?;
+        unsafe {
+            spandsp_sys::t30_set_receive_recovery(
+                spandsp_sys::fax_get_t30_state(state.inner.as_ptr()),
+                (policy == ReceiveRecovery::PreserveDecodedRows) as i32,
+            );
+        }
+        Ok(state)
+    }
+
+    /// Stop reception and close TIFF output, without synthesizing phase E.
+    /// Repeated calls return the same cached report and never append pages.
+    /// The owner cannot be restarted afterward. All borrowed handles must have
+    /// ended; callback user data may be released after this call returns.
+    pub fn finalize_receive(&mut self) -> &ReceiveReport {
+        if self.report.is_none() {
+            self.report = Some(unsafe {
+                crate::receive_recovery::finalize(spandsp_sys::fax_get_t30_state(
+                    self.inner.as_ptr(),
+                ))
+            });
+        }
+        self.report.as_ref().unwrap()
     }
 
     /// Get the raw pointer.
@@ -31,8 +63,8 @@ impl FaxState {
         self.inner.as_ptr()
     }
 
-    /// Get a (non-owned) handle to the T.30 protocol engine inside this FAX context.
-    pub fn get_t30_state(&self) -> Result<T30State> {
+    /// Borrow a handle to the T.30 protocol engine inside this FAX context.
+    pub fn get_t30_state(&self) -> Result<T30State<'_>> {
         let ptr = unsafe { spandsp_sys::fax_get_t30_state(self.inner.as_ptr()) };
         unsafe { T30State::from_raw(ptr, false) }
     }
@@ -41,6 +73,9 @@ impl FaxState {
     ///
     /// Returns the number of unprocessed samples (non-zero means end of call).
     pub fn rx(&self, samples: &mut [i16]) -> usize {
+        if self.report.is_some() {
+            return samples.len();
+        }
         unsafe {
             spandsp_sys::fax_rx(
                 self.inner.as_ptr(),
@@ -54,6 +89,9 @@ impl FaxState {
     ///
     /// Returns the number of samples generated (0 when nothing to send).
     pub fn tx(&self, buf: &mut [i16]) -> usize {
+        if self.report.is_some() {
+            return 0;
+        }
         unsafe {
             spandsp_sys::fax_tx(self.inner.as_ptr(), buf.as_mut_ptr(), buf.len() as c_int) as usize
         }
@@ -67,7 +105,10 @@ impl FaxState {
     }
 
     /// Restart the FAX context.
-    pub fn restart(&self, calling_party: bool) -> Result<()> {
+    pub fn restart(&mut self, calling_party: bool) -> Result<()> {
+        if self.report.is_some() {
+            return Err(SpanDspError::InvalidInput("receiver finalized".into()));
+        }
         let rc = unsafe { spandsp_sys::fax_restart(self.inner.as_ptr(), calling_party) };
         if rc != 0 {
             return Err(SpanDspError::ErrorCode(rc));

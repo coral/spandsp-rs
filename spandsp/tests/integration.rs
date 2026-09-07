@@ -914,7 +914,7 @@ mod t4_codec {
                     return 0;
                 }
                 let len = buf.len().min(ROW_BYTES);
-                if *idx % 2 == 0 {
+                if (*idx).is_multiple_of(2) {
                     buf[..len].fill(0x00); // white
                 } else {
                     buf[..len].fill(0xFF); // black
@@ -984,7 +984,7 @@ mod t4_codec {
                     return 0;
                 }
                 let len = buf.len().min(ROW_BYTES);
-                if *idx % 2 == 0 {
+                if (*idx).is_multiple_of(2) {
                     buf[..len].fill(0x00); // white
                 } else {
                     buf[..len].fill(0xFF); // black

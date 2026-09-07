@@ -40,19 +40,24 @@ impl fmt::Display for T30ModemSupport {
 ///
 /// This is typically obtained via `FaxState::get_t30_state()` or
 /// `T38Terminal::get_t30_state()` rather than created directly.
-pub struct T30State {
+pub struct T30State<'a> {
+    _owner: std::marker::PhantomData<&'a std::cell::Cell<()>>,
     inner: NonNull<spandsp_sys::t30_state_t>,
     owned: bool,
 }
 
-impl T30State {
+impl<'a> T30State<'a> {
     /// Wrap an existing pointer obtained from another spandsp object.
     ///
     /// # Safety
-    /// The pointer must be valid. `owned` controls whether `t30_free` is called on drop.
+    /// The pointer must be valid for the entire chosen lifetime. Aliases must not be used concurrently or reentrantly. `owned` controls whether `t30_free` is called on drop.
     pub unsafe fn from_raw(ptr: *mut spandsp_sys::t30_state_t, owned: bool) -> Result<Self> {
         let inner = NonNull::new(ptr).ok_or(SpanDspError::InitFailed)?;
-        Ok(Self { inner, owned })
+        Ok(Self {
+            inner,
+            owned,
+            _owner: std::marker::PhantomData,
+        })
     }
 
     /// Get the raw pointer.
@@ -116,7 +121,10 @@ impl T30State {
     /// Set the T.30 phase B handler (called at start of document exchange).
     ///
     /// # Safety
-    /// The callback and user_data must remain valid for the lifetime of this state.
+    /// The callback and user_data must remain valid until the owning receiver is
+    /// finalized or dropped, or this callback is replaced. A borrowed handle does
+    /// not own callback storage. Callbacks must not unwind or reenter the owner,
+    /// and must be safe on any thread to which the owner is moved.
     pub unsafe fn set_phase_b_handler_raw(
         &self,
         handler: spandsp_sys::t30_phase_b_handler_t,
@@ -130,7 +138,10 @@ impl T30State {
     /// Set the T.30 phase D handler (called at end of each page).
     ///
     /// # Safety
-    /// The callback and user_data must remain valid for the lifetime of this state.
+    /// The callback and user_data must remain valid until the owning receiver is
+    /// finalized or dropped, or this callback is replaced. A borrowed handle does
+    /// not own callback storage. Callbacks must not unwind or reenter the owner,
+    /// and must be safe on any thread to which the owner is moved.
     pub unsafe fn set_phase_d_handler_raw(
         &self,
         handler: spandsp_sys::t30_phase_d_handler_t,
@@ -144,7 +155,10 @@ impl T30State {
     /// Set the T.30 phase E handler (called at completion of fax session).
     ///
     /// # Safety
-    /// The callback and user_data must remain valid for the lifetime of this state.
+    /// The callback and user_data must remain valid until the owning receiver is
+    /// finalized or dropped, or this callback is replaced. A borrowed handle does
+    /// not own callback storage. Callbacks must not unwind or reenter the owner,
+    /// and must be safe on any thread to which the owner is moved.
     pub unsafe fn set_phase_e_handler_raw(
         &self,
         handler: spandsp_sys::t30_phase_e_handler_t,
@@ -261,7 +275,7 @@ impl T30State {
     }
 }
 
-impl Drop for T30State {
+impl Drop for T30State<'_> {
     fn drop(&mut self) {
         if self.owned {
             unsafe {

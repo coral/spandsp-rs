@@ -1,3 +1,4 @@
 [submodule "vendor/spandsp"]
 	path = spandsp-sys/vendor
-	url = https://github.com/freeswitch/spandsp.git
+	url = https://github.com/coral/spandsp-rs.git
+	branch = vendor/receive-recovery
