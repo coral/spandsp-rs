@@ -32,8 +32,17 @@
     T.30 FAX channel descriptor. This defines the state of a single working
     instance of a T.30 FAX channel.
 */
+SPAN_DECLARE(void) t30_receive_stream_gap(t30_state_t *s);
+
 struct t30_state_s
 {
+    t4_rx_recovery_state_t recovery;
+    int receive_finalized;
+    int receive_completed;
+    int receive_completion_code;
+    int receive_stats_saved;
+    t30_stats_t receive_saved_stats;
+    t30_stats_t receive_final_stats;
     /*! \brief T.4 context for reading or writing image data. */
     union
     {

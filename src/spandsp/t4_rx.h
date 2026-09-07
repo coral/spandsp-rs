@@ -45,6 +45,18 @@ for FAX transmission.
     \return 0 for OK, or non-zero for a problem that requires the image be interrupted. */
 typedef int (*t4_row_write_handler_t)(void *user_data, const uint8_t buf[], size_t len);
 
+/* Receive output inventory. Resolutions are pixels per metre. */
+typedef struct
+{
+    int partial;
+    int rows;
+    int width;
+    int x_resolution;
+    int y_resolution;
+    int bad_rows;
+    int missing_tail;
+} t4_rx_recovery_page_t;
+
 /*! Supported compression modes. */
 typedef enum
 {

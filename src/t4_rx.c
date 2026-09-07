@@ -200,6 +200,12 @@ SPAN_DECLARE(const char *) t4_image_resolution_to_str(int resolution_code)
 }
 /*- End of function --------------------------------------------------------*/
 
+static int recovery_decoder_supported(t4_rx_state_t *s)
+{
+    return s->current_decoder == (T4_COMPRESSION_T4_1D | T4_COMPRESSION_T4_2D | T4_COMPRESSION_T6)
+        || s->current_decoder == (T4_COMPRESSION_T85 | T4_COMPRESSION_T85_L0);
+}
+
 static int set_tiff_directory_info(t4_rx_state_t *s)
 {
     time_t now;
@@ -308,47 +314,67 @@ static int set_tiff_directory_info(t4_rx_state_t *s)
     }
     /*endswitch*/
 
-    TIFFSetField(t->tiff_file, TIFFTAG_COMPRESSION, output_compression);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_COMPRESSION, output_compression) && s->recovery)
+        s->recovery->output_error |= 1;
     switch (output_compression)
     {
     case COMPRESSION_CCITT_T4:
-        TIFFSetField(t->tiff_file, TIFFTAG_T4OPTIONS, output_t4_options);
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_T4OPTIONS, output_t4_options) && s->recovery)
+            s->recovery->output_error |= 1;
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     case COMPRESSION_CCITT_T6:
-        TIFFSetField(t->tiff_file, TIFFTAG_T6OPTIONS, 0);
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_T6OPTIONS, 0) && s->recovery)
+            s->recovery->output_error |= 1;
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     case COMPRESSION_T85:
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     case COMPRESSION_JPEG:
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     case COMPRESSION_T43:
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXMODE, FAXMODE_CLASSF) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     }
     /*endswitch*/
-    TIFFSetField(t->tiff_file, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-    TIFFSetField(t->tiff_file, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
-    TIFFSetField(t->tiff_file, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
-    TIFFSetField(t->tiff_file, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-    TIFFSetField(t->tiff_file, TIFFTAG_PHOTOMETRIC, photometric);
-    TIFFSetField(t->tiff_file, TIFFTAG_FILLORDER, FILLORDER_LSB2MSB);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_BITSPERSAMPLE, bits_per_sample) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_PHOTOMETRIC, photometric) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_FILLORDER, FILLORDER_LSB2MSB) && s->recovery)
+        s->recovery->output_error |= 1;
     switch (t->compression)
     {
     case T4_COMPRESSION_JPEG:
-        TIFFSetField(t->tiff_file, TIFFTAG_YCBCRSUBSAMPLING, 2, 2);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_YCBCRSUBSAMPLING, 2, 2) && s->recovery)
+            s->recovery->output_error |= 1;
         //TIFFSetField(t->tiff_file, TIFFTAG_YCBCRSUBSAMPLING, 1, 1);
-        TIFFSetField(t->tiff_file, TIFFTAG_JPEGQUALITY, 75);
-        TIFFSetField(t->tiff_file, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_JPEGQUALITY, 75) && s->recovery)
+            s->recovery->output_error |= 1;
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     case T4_COMPRESSION_T42_T81:
-        TIFFSetField(t->tiff_file, TIFFTAG_YCBCRSUBSAMPLING, 2, 2);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_YCBCRSUBSAMPLING, 2, 2) && s->recovery)
+            s->recovery->output_error |= 1;
         //TIFFSetField(t->tiff_file, TIFFTAG_YCBCRSUBSAMPLING, 1, 1);
-        TIFFSetField(t->tiff_file, TIFFTAG_JPEGQUALITY, 75);
-        TIFFSetField(t->tiff_file, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_JPEGQUALITY, 75) && s->recovery)
+            s->recovery->output_error |= 1;
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB) && s->recovery)
+            s->recovery->output_error |= 1;
         break;
     }
     /*endswitch*/
@@ -359,37 +385,50 @@ static int set_tiff_directory_info(t4_rx_state_t *s)
     /* Metric seems the sane thing to use in the 21st century, but a lot of lousy software
        gets FAX resolutions wrong, and more get it wrong using metric than using inches. */
 #if 0
-    TIFFSetField(t->tiff_file, TIFFTAG_XRESOLUTION, x_resolution);
-    TIFFSetField(t->tiff_file, TIFFTAG_YRESOLUTION, y_resolution);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_XRESOLUTION, x_resolution) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_YRESOLUTION, y_resolution) && s->recovery)
+        s->recovery->output_error |= 1;
     resunit = RESUNIT_CENTIMETER;
-    TIFFSetField(t->tiff_file, TIFFTAG_RESOLUTIONUNIT, resunit);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_RESOLUTIONUNIT, resunit) && s->recovery)
+        s->recovery->output_error |= 1;
 #else
-    TIFFSetField(t->tiff_file, TIFFTAG_XRESOLUTION, floorf(x_resolution*CM_PER_INCH + 0.5f));
-    TIFFSetField(t->tiff_file, TIFFTAG_YRESOLUTION, floorf(y_resolution*CM_PER_INCH + 0.5f));
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_XRESOLUTION, floorf(x_resolution*CM_PER_INCH + 0.5f)) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_YRESOLUTION, floorf(y_resolution*CM_PER_INCH + 0.5f)) && s->recovery)
+        s->recovery->output_error |= 1;
     resunit = RESUNIT_INCH;
-    TIFFSetField(t->tiff_file, TIFFTAG_RESOLUTIONUNIT, resunit);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_RESOLUTIONUNIT, resunit) && s->recovery)
+        s->recovery->output_error |= 1;
 #endif
-    TIFFSetField(t->tiff_file, TIFFTAG_SOFTWARE, "Spandsp " SPANDSP_RELEASE_DATETIME_STRING);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_SOFTWARE, "Spandsp " SPANDSP_RELEASE_DATETIME_STRING) && s->recovery)
+        s->recovery->output_error |= 1;
     if (gethostname(buf, sizeof(buf)) == 0)
-        TIFFSetField(t->tiff_file, TIFFTAG_HOSTCOMPUTER, buf);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_HOSTCOMPUTER, buf) && s->recovery)
+            s->recovery->output_error |= 1;
     /*endif*/
 
 #if defined(TIFFTAG_FAXDCS)
     if (s->metadata.dcs)
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXDCS, s->metadata.dcs);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXDCS, s->metadata.dcs) && s->recovery)
+            s->recovery->output_error |= 1;
     /*endif*/
 #endif
     if (s->metadata.sub_address)
-        TIFFSetField(t->tiff_file, TIFFTAG_FAXSUBADDRESS, s->metadata.sub_address);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXSUBADDRESS, s->metadata.sub_address) && s->recovery)
+            s->recovery->output_error |= 1;
     /*endif*/
     if (s->metadata.far_ident)
-        TIFFSetField(t->tiff_file, TIFFTAG_IMAGEDESCRIPTION, s->metadata.far_ident);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_IMAGEDESCRIPTION, s->metadata.far_ident) && s->recovery)
+            s->recovery->output_error |= 1;
     /*endif*/
     if (s->metadata.vendor)
-        TIFFSetField(t->tiff_file, TIFFTAG_MAKE, s->metadata.vendor);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_MAKE, s->metadata.vendor) && s->recovery)
+            s->recovery->output_error |= 1;
     /*endif*/
     if (s->metadata.model)
-        TIFFSetField(t->tiff_file, TIFFTAG_MODEL, s->metadata.model);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_MODEL, s->metadata.model) && s->recovery)
+            s->recovery->output_error |= 1;
     /*endif*/
 
     time(&now);
@@ -402,14 +441,21 @@ static int set_tiff_directory_info(t4_rx_state_t *s)
             tm->tm_hour,
             tm->tm_min,
             tm->tm_sec);
-    TIFFSetField(t->tiff_file, TIFFTAG_DATETIME, buf);
-    TIFFSetField(t->tiff_file, TIFFTAG_FAXRECVTIME, now - s->tiff.page_start_time);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_DATETIME, buf) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXRECVTIME, now - s->tiff.page_start_time) && s->recovery)
+        s->recovery->output_error |= 1;
 
-    TIFFSetField(t->tiff_file, TIFFTAG_IMAGEWIDTH, s->metadata.image_width);
+    if (s->recovery && s->recovery->preserve
+        && s->current_decoder == (T4_COMPRESSION_T85 | T4_COMPRESSION_T85_L0))
+        s->metadata.image_width = t85_decode_get_image_width(&s->decoder.t85);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_IMAGEWIDTH, s->metadata.image_width) && s->recovery)
+        s->recovery->output_error |= 1;
     /* Set the total pages to 1. For any one page document we will get this
        right. For multi-page documents we will need to come back and fill in
        the right answer when we know it. */
-    TIFFSetField(t->tiff_file, TIFFTAG_PAGENUMBER, s->current_page, 1);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_PAGENUMBER, s->current_page, 1) && s->recovery)
+        s->recovery->output_error |= 1;
     /* TIFF page numbers start from zero, so the number of pages in the file
        is always one greater than the highest page number in the file. */
     s->tiff.pages_in_file = s->current_page + 1;
@@ -442,13 +488,17 @@ static int set_tiff_directory_info(t4_rx_state_t *s)
             {
                 if (s->decoder.t4_t6.bad_rows)
                 {
-                    TIFFSetField(t->tiff_file, TIFFTAG_BADFAXLINES, s->decoder.t4_t6.bad_rows);
-                    TIFFSetField(t->tiff_file, TIFFTAG_CONSECUTIVEBADFAXLINES, s->decoder.t4_t6.longest_bad_row_run);
-                    TIFFSetField(t->tiff_file, TIFFTAG_CLEANFAXDATA, CLEANFAXDATA_REGENERATED);
+                    if (!TIFFSetField(t->tiff_file, TIFFTAG_BADFAXLINES, s->decoder.t4_t6.bad_rows) && s->recovery)
+                        s->recovery->output_error |= 1;
+                    if (!TIFFSetField(t->tiff_file, TIFFTAG_CONSECUTIVEBADFAXLINES, s->decoder.t4_t6.longest_bad_row_run) && s->recovery)
+                        s->recovery->output_error |= 1;
+                    if (!TIFFSetField(t->tiff_file, TIFFTAG_CLEANFAXDATA, CLEANFAXDATA_REGENERATED) && s->recovery)
+                        s->recovery->output_error |= 1;
                 }
                 else
                 {
-                    TIFFSetField(t->tiff_file, TIFFTAG_CLEANFAXDATA, CLEANFAXDATA_CLEAN);
+                    if (!TIFFSetField(t->tiff_file, TIFFTAG_CLEANFAXDATA, CLEANFAXDATA_CLEAN) && s->recovery)
+                        s->recovery->output_error |= 1;
                 }
                 /*endif*/
             }
@@ -478,44 +528,60 @@ static int set_tiff_directory_info(t4_rx_state_t *s)
 #endif
     }
     /*endswitch*/
-    TIFFSetField(t->tiff_file, TIFFTAG_IMAGELENGTH, s->metadata.image_length);
-    TIFFSetField(t->tiff_file, TIFFTAG_ROWSPERSTRIP, s->metadata.image_length);
+    if (s->recovery && s->recovery->preserve && recovery_decoder_supported(s))
+        s->metadata.image_length = s->decoded_rows;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_IMAGELENGTH, s->metadata.image_length) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_ROWSPERSTRIP, s->metadata.image_length) && s->recovery)
+        s->recovery->output_error |= 1;
 #if defined(SPANDSP_SUPPORT_TIFF_FX)
-    TIFFSetField(t->tiff_file, TIFFTAG_PROFILETYPE, PROFILETYPE_G3_FAX);
-    TIFFSetField(t->tiff_file, TIFFTAG_FAXPROFILE, FAXPROFILE_S);
-    TIFFSetField(t->tiff_file, TIFFTAG_CODINGMETHODS, CODINGMETHODS_T4_1D | CODINGMETHODS_T4_2D | CODINGMETHODS_T6);
-    TIFFSetField(t->tiff_file, TIFFTAG_VERSIONYEAR, "1998");
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_PROFILETYPE, PROFILETYPE_G3_FAX) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_FAXPROFILE, FAXPROFILE_S) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_CODINGMETHODS, CODINGMETHODS_T4_1D | CODINGMETHODS_T4_2D | CODINGMETHODS_T6) && s->recovery)
+        s->recovery->output_error |= 1;
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_VERSIONYEAR, "1998") && s->recovery)
+        s->recovery->output_error |= 1;
     if (s->current_page == 0)
     {
         /* Create a placeholder for the global parameters IFD, to be filled in later */
-        TIFFSetField(t->tiff_file, TIFFTAG_GLOBALPARAMETERSIFD, 0);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_GLOBALPARAMETERSIFD, 0) && s->recovery)
+            s->recovery->output_error |= 1;
     }
 
 #if 0
     /* Paletised image? */
-    TIFFSetField(t->tiff_file, TIFFTAG_INDEXED, 1);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_INDEXED, 1) && s->recovery)
+        s->recovery->output_error |= 1;
     /* T.44 mode */
-    TIFFSetField(t->tiff_file, TIFFTAG_MODENUMBER, 0);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_MODENUMBER, 0) && s->recovery)
+        s->recovery->output_error |= 1;
     span_log(&s->logging, SPAN_LOG_FLOW, "TIFF/FX stuff 2\n");
     {
         float xxx[] = {20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0};
-        TIFFSetField(t->tiff_file, TIFFTAG_DECODE, (uint16) 2*samples_per_pixel, xxx);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_DECODE, (uint16) 2*samples_per_pixel, xxx) && s->recovery)
+            s->recovery->output_error |= 1;
     }
     span_log(&s->logging, SPAN_LOG_FLOW, "TIFF/FX stuff 3\n");
     {
         uint16_t xxx[] = {12, 34, 45, 67};
-        TIFFSetField(t->tiff_file, TIFFTAG_IMAGEBASECOLOR, (uint16_t) samples_per_pixel, xxx);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_IMAGEBASECOLOR, (uint16_t) samples_per_pixel, xxx) && s->recovery)
+            s->recovery->output_error |= 1;
     }
     span_log(&s->logging, SPAN_LOG_FLOW, "TIFF/FX stuff 4\n");
-    TIFFSetField(t->tiff_file, TIFFTAG_T82OPTIONS, 0);
+    if (!TIFFSetField(t->tiff_file, TIFFTAG_T82OPTIONS, 0) && s->recovery)
+        s->recovery->output_error |= 1;
     {
         uint32_t xxx[] = {34, 56, 78, 90};
-        TIFFSetField(t->tiff_file, TIFFTAG_STRIPROWCOUNTS, (uint16_t) 5, xxx);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_STRIPROWCOUNTS, (uint16_t) 5, xxx) && s->recovery)
+            s->recovery->output_error |= 1;
     }
     span_log(&s->logging, SPAN_LOG_FLOW, "TIFF/FX stuff 5\n");
     {
         uint32_t xxx[] = {2, 3};
-        TIFFSetField(t->tiff_file, TIFFTAG_IMAGELAYER, xxx);
+        if (!TIFFSetField(t->tiff_file, TIFFTAG_IMAGELAYER, xxx) && s->recovery)
+            s->recovery->output_error |= 1;
     }
 #endif
 #endif
@@ -647,6 +713,7 @@ static int write_tiff_t43_image(t4_rx_state_t *s)
 static int write_tiff_image(t4_rx_state_t *s)
 {
     t4_rx_tiff_state_t *t;
+    int write_failed = 0;
 #if defined(SPANDSP_SUPPORT_TIFF_FX)  &&  TIFFLIB_VERSION >= 20120922  &&  defined(HAVE_TIF_DIR_H)
     toff_t diroff;
 #endif
@@ -665,7 +732,12 @@ static int write_tiff_image(t4_rx_state_t *s)
     if (s->current_decoder == 0)
     {
         if (TIFFWriteRawStrip(s->tiff.tiff_file, 0, s->decoder.no_decoder.buf, s->decoder.no_decoder.buf_ptr) < 0)
+        {
+            write_failed = 1;
+            if (s->recovery)
+                s->recovery->output_error |= 1;
             span_log(&s->logging, SPAN_LOG_WARNING, "%s: Error writing TIFF strip.\n", s->tiff.file);
+        }
         /*endif*/
     }
     else
@@ -702,7 +774,12 @@ static int write_tiff_image(t4_rx_state_t *s)
         default:
             /* Let libtiff do the compression */
             if (TIFFWriteEncodedStrip(t->tiff_file, 0, t->image_buffer, t->image_size) < 0)
+            {
+                write_failed = 1;
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "%s: Error writing TIFF strip.\n", t->file);
+            }
             /*endif*/
             break;
         }
@@ -711,7 +788,12 @@ static int write_tiff_image(t4_rx_state_t *s)
     /*endif*/
     /* ...then finalise the directory entry, and libtiff is happy. */
     if (!TIFFWriteDirectory(t->tiff_file))
+    {
+        write_failed = 1;
+        if (s->recovery)
+            s->recovery->output_error |= 1;
         span_log(&s->logging, SPAN_LOG_WARNING, "%s: Failed to write directory for page %d.\n", t->file, s->current_page);
+    }
     /*endif*/
 #if defined(SPANDSP_SUPPORT_TIFF_FX)
     /* According to the TIFF/FX spec, a global parameters IFD should only be inserted into
@@ -729,17 +811,37 @@ static int write_tiff_image(t4_rx_state_t *s)
 
             diroff = 0;
             if (!TIFFWriteCustomDirectory(t->tiff_file, &diroff))
+            {
+                write_failed = 1;
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "Failed to write custom directory.\n");
+            }
 
             /* Now go back and patch in the pointer to the new IFD */
             if (!TIFFSetDirectory(t->tiff_file, s->current_page))
+            {
+                write_failed = 1;
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "Failed to set directory.\n");
+            }
             /*endif*/
             if (!TIFFSetField(t->tiff_file, TIFFTAG_GLOBALPARAMETERSIFD, diroff))
+            {
+                write_failed = 1;
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "Failed to set field.\n");
+            }
             /*endif*/
             if (!TIFFWriteDirectory(t->tiff_file))
+            {
+                write_failed = 1;
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "%s: Failed to write directory for page %d.\n", t->file, s->current_page);
+            }
             /*endif*/
         }
         /*endif*/
@@ -747,7 +849,7 @@ static int write_tiff_image(t4_rx_state_t *s)
     }
     /*endif*/
 #endif
-    return 0;
+    return (s->recovery && write_failed) ? -1 : 0;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -767,17 +869,42 @@ static int close_tiff_output_file(t4_rx_state_t *s)
         for (i = 0;  i < s->current_page;  i++)
         {
             if (!TIFFSetDirectory(t->tiff_file, (tdir_t) i))
+            {
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "%s: Failed to set directory to page %d.\n", s->tiff.file, i);
+            }
             /*endif*/
-            TIFFSetField(t->tiff_file, TIFFTAG_PAGENUMBER, i, s->current_page);
+            if (!TIFFSetField(t->tiff_file, TIFFTAG_PAGENUMBER, i, s->current_page) && s->recovery)
+                s->recovery->output_error |= 1;
             if (!TIFFWriteDirectory(t->tiff_file))
+            {
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "%s: Failed to write directory for page %d.\n", s->tiff.file, i);
+            }
             /*endif*/
         }
         /*endfor*/
     }
     /*endif*/
-    TIFFClose(t->tiff_file);
+    if (s->recovery)
+    {
+        /* TIFFClose returns void. Use libtiff's documented cleanup/close split
+           to observe both flush failure and the underlying close result. */
+        thandle_t handle = TIFFClientdata(t->tiff_file);
+        TIFFCloseProc close_proc = TIFFGetCloseProc(t->tiff_file);
+        if (!TIFFFlush(t->tiff_file))
+            s->recovery->output_error |= 2;
+        TIFFCleanup(t->tiff_file);
+        if (close_proc(handle) != 0)
+            s->recovery->output_error |= 4;
+        s->recovery->closed = !(s->recovery->output_error & (2 | 4));
+    }
+    else
+    {
+        TIFFClose(t->tiff_file);
+    }
     t->tiff_file = NULL;
     if (s->tiff.file)
     {
@@ -786,7 +913,11 @@ static int close_tiff_output_file(t4_rx_state_t *s)
         if (s->current_page == 0)
         {
             if (remove(s->tiff.file) < 0)
+            {
+                if (s->recovery)
+                    s->recovery->output_error |= 1;
                 span_log(&s->logging, SPAN_LOG_WARNING, "%s: Failed to remove file.\n", s->tiff.file);
+            }
             /*endif*/
         }
         /*endif*/
@@ -933,7 +1064,7 @@ static bool select_tiff_compression(t4_rx_state_t *s, int output_image_type)
     /* The only compression schemes where we can really avoid decoding and
        recoding the images are those where the width an length of the image
        can be readily extracted from the image data (e.g. from its header) */
-    if ((s->metadata.compression & (s->supported_tiff_compressions & (T4_COMPRESSION_T85 | T4_COMPRESSION_T85_L0 | T4_COMPRESSION_T42_T81 | T4_COMPRESSION_SYCC_T81))))
+    if (!(s->recovery && s->recovery->preserve) && (s->metadata.compression & (s->supported_tiff_compressions & (T4_COMPRESSION_T85 | T4_COMPRESSION_T85_L0 | T4_COMPRESSION_T42_T81 | T4_COMPRESSION_SYCC_T81))))
     {
         span_log(&s->logging, SPAN_LOG_FLOW, "Image can be written without recoding\n");
         s->tiff.compression = s->metadata.compression;
@@ -1313,6 +1444,9 @@ SPAN_DECLARE(int) t4_rx_start_page(t4_rx_state_t *s)
 #endif
     }
     /*endswitch*/
+    s->page_active = 1;
+    s->decoded_rows = 0;
+    s->missing_tail = 0;
     s->line_image_size = 0;
     s->tiff.image_size = 0;
 
@@ -1330,10 +1464,22 @@ static int tiff_row_write_handler(void *user_data, const uint8_t buf[], size_t l
     s = (t4_rx_state_t *) user_data;
     if (buf  &&  len > 0)
     {
+        if (s->recovery && s->recovery->preserve
+            && (s->missing_tail ||
+                (s->current_decoder == (T4_COMPRESSION_T4_1D | T4_COMPRESSION_T4_2D | T4_COMPRESSION_T6)
+                && s->decoder.t4_t6.bad_rows)))
+        {
+            s->missing_tail = 1;
+            s->recovery->missing_tail = 1;
+            return 0;
+        }
         if (s->tiff.image_size + len >= s->tiff.image_buffer_size)
         {
             if ((t = span_realloc(s->tiff.image_buffer, s->tiff.image_buffer_size + 100*len)) == NULL)
+            {
+                if (s->recovery) s->recovery->output_error |= 8;
                 return -1;
+            }
             /*endif*/
             s->tiff.image_buffer_size += 100*len;
             s->tiff.image_buffer = t;
@@ -1341,11 +1487,63 @@ static int tiff_row_write_handler(void *user_data, const uint8_t buf[], size_t l
         /*endif*/
         memcpy(&s->tiff.image_buffer[s->tiff.image_size], buf, len);
         s->tiff.image_size += len;
+        s->decoded_rows++;
     }
     /*endif*/
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
+
+static void record_output_page(t4_rx_state_t *s, int partial)
+{
+    t4_rx_recovery_state_t *r = s->recovery;
+    t4_rx_recovery_page_t *pages;
+    t4_rx_recovery_page_t *p;
+    t4_stats_t stats;
+    if (!r) return;
+    pages = span_realloc(r->pages, (r->count + 1)*sizeof(*pages));
+    if (!pages)
+    {
+        r->output_error |= 8;
+        return;
+    }
+    r->pages = pages;
+    p = &r->pages[r->count++];
+    t4_rx_get_transfer_statistics(s, &stats);
+    p->partial = partial || (r->preserve && s->missing_tail);
+    p->rows = s->metadata.image_length;
+    p->width = s->metadata.image_width;
+    p->x_resolution = s->metadata.x_resolution;
+    p->y_resolution = s->metadata.y_resolution;
+    p->bad_rows = stats.bad_rows;
+    p->missing_tail = partial || s->missing_tail;
+}
+
+/* Do not flush the decoder with synthetic zero bits: only rows already emitted
+   from a contiguous, undamaged stream qualify. Never advance T.30 pages_rx. */
+SPAN_DECLARE(void) t4_rx_preserve_page(t4_rx_state_t *s)
+{
+    if (!s->page_active || !s->recovery || !s->recovery->preserve) return;
+    s->page_active = 0;
+    if (s->line_image_size == 0) return;
+    s->recovery->missing_tail = 1;
+    if (!recovery_decoder_supported(s))
+    {
+        s->recovery->unsupported_partial = 1;
+        return;
+    }
+    if (s->decoded_rows > 0 && s->tiff.tiff_file)
+    {
+        if (write_tiff_image(s) == 0)
+        {
+            record_output_page(s, 1);
+            s->current_page++;
+        }
+        else
+            s->recovery->output_error |= 1;
+    }
+    s->tiff.image_size = 0;
+}
 
 SPAN_DECLARE(int) t4_rx_end_page(t4_rx_state_t *s)
 {
@@ -1353,7 +1551,9 @@ SPAN_DECLARE(int) t4_rx_end_page(t4_rx_state_t *s)
 
     length = 0;
 
-    if (s->image_put_handler)
+    s->page_active = 0;
+    if (s->image_put_handler && !(s->recovery && s->recovery->preserve
+        && recovery_decoder_supported(s)))
         s->image_put_handler((void *) &s->decoder, NULL, 0);
     /*endif*/
 
@@ -1394,12 +1594,20 @@ SPAN_DECLARE(int) t4_rx_end_page(t4_rx_state_t *s)
 
     if (length == 0)
         return -1;
+    if (s->recovery && s->recovery->preserve && s->decoded_rows == 0
+        && recovery_decoder_supported(s))
+        return 0;
     /*endif*/
 
     if (s->tiff.tiff_file)
     {
         if (write_tiff_image(s) == 0)
+        {
+            record_output_page(s, 0);
             s->current_page++;
+        }
+        else if (s->recovery)
+            s->recovery->output_error |= 1;
         /*endif*/
         s->tiff.image_size = 0;
     }

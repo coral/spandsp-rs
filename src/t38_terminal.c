@@ -207,6 +207,7 @@ static int process_rx_missing(t38_core_state_t *t, void *user_data, int rx_seq_n
 
     s = (t38_terminal_state_t *) user_data;
     s->t38_fe.rx_data_missing = true;
+    t30_receive_stream_gap(&s->t30);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

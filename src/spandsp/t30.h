@@ -619,6 +619,20 @@ SPAN_DECLARE(void) t30_timer_update(t30_state_t *s, int samples);
     \param t A pointer to a buffer for the statistics. */
 SPAN_DECLARE(void) t30_get_transfer_statistics(t30_state_t *s, t30_stats_t *t);
 
+/* Configure before supplying any media. Finalize is terminal and invokes no application
+   callbacks. The returned statistics are the original, pre-finalization statistics.
+   Page pointers remain owned by T.30 and must not be retained beyond release/restart. */
+SPAN_DECLARE(int) t30_set_receive_recovery(t30_state_t *s, int preserve);
+SPAN_DECLARE(void) t30_receive_finalize(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_completed(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_completion_code(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_output_error(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_output_closed(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_missing_tail(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_unsupported_partial(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_page_count(t30_state_t *s);
+SPAN_DECLARE(int) t30_receive_page(t30_state_t *s, int index, t4_rx_recovery_page_t *page);
+
 /*! Request a local interrupt of FAX exchange.
     \brief Request a local interrupt of FAX exchange.
     \param s The T.30 context.

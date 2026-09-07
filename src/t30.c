@@ -635,6 +635,24 @@ static int terminate_operation_in_progress(t30_state_t *s)
         s->operation_in_progress = OPERATION_IN_PROGRESS_POST_T4_TX;
         break;
     case OPERATION_IN_PROGRESS_T4_RX:
+        t30_get_transfer_statistics(s, &s->receive_saved_stats);
+        s->receive_stats_saved = 1;
+        if (s->recovery.preserve && s->t4.rx.page_active && s->error_correcting_mode && !s->document_put_handler)
+        {
+            int i;
+            /* CRC-checked frames only, in order, stopping at the first gap or
+               suspect short frame. Committed blocks have already been cleared. */
+            for (i = 0; i < 256; i++)
+                if (s->ecm_len[i] >= 0) s->recovery.missing_tail = 1;
+            for (i = 0; i < 256; i++)
+            {
+                int len = s->ecm_len[i];
+                if (len <= 0 || len > s->octets_per_ecm_frame) break;
+                if (len != s->octets_per_ecm_frame && i != s->ecm_frames - 1) break;
+                if (t4_rx_put(&s->t4.rx, s->ecm_data[i], len) != T4_DECODE_MORE_DATA) break;
+            }
+        }
+        t4_rx_preserve_page(&s->t4.rx);
         t4_rx_release(&s->t4.rx);
         s->operation_in_progress = OPERATION_IN_PROGRESS_POST_T4_RX;
         break;
@@ -676,6 +694,7 @@ static int rx_start_page(t30_state_t *s)
 {
     int i;
 
+    t4_rx_preserve_page(&s->t4.rx);
     t4_rx_set_image_width(&s->t4.rx, s->image_width);
     t4_rx_set_sub_address(&s->t4.rx, s->rx_info.sub_address);
     t4_rx_set_dcs(&s->t4.rx, s->rx_dcs_string);
@@ -2888,6 +2907,8 @@ static void terminate_call(t30_state_t *s)
     s->timer_t2_t4 = 0;
     s->timer_t3 = 0;
     s->timer_t5 = 0;
+    s->receive_completed = 1;
+    s->receive_completion_code = s->current_status;
     if (s->phase_e_handler)
         s->phase_e_handler(s->phase_e_user_data, s->current_status);
     /*endif*/
@@ -3270,12 +3291,16 @@ static int process_rx_dcs(t30_state_t *s, const uint8_t *msg, int len)
     {
         if (t4_rx_init(&s->t4.rx, s->rx_file, s->supported_output_compressions) == NULL)
         {
+            s->recovery.output_error |= 16;
+            s->recovery.closed = 0;
             span_log(&s->logging, SPAN_LOG_WARNING, "Cannot open target TIFF file '%s'\n", s->rx_file);
             t30_set_status(s, T30_ERR_FILEERROR);
             send_dcn(s);
             return -1;
         }
         /*endif*/
+        s->t4.rx.recovery = &s->recovery;
+        s->recovery.closed = 0;
         s->operation_in_progress = OPERATION_IN_PROGRESS_T4_RX;
     }
     /*endif*/
@@ -7450,7 +7475,8 @@ SPAN_DECLARE(void) t30_terminate(t30_state_t *s)
                in response to EOP or PRI_EOP. This might cause it to say the call did
                not complete properly. However, if this function has been called we can
                do no more. */
-            if (!s->end_of_procedure_detected)
+            if (!s->end_of_procedure_detected
+                && !(s->recovery.preserve && s->current_status != T30_ERR_OK))
             {
                 /* The call terminated prematurely. */
                 t30_set_status(s, T30_ERR_CALLDROPPED);
@@ -7469,6 +7495,18 @@ SPAN_DECLARE(void) t30_get_transfer_statistics(t30_state_t *s, t30_stats_t *t)
 {
     t4_stats_t stats;
 
+    if (s->receive_finalized)
+    {
+        *t = s->receive_final_stats;
+        return;
+    }
+    if (s->receive_stats_saved && s->operation_in_progress == OPERATION_IN_PROGRESS_POST_T4_RX)
+    {
+        *t = s->receive_saved_stats;
+        t->current_status = s->current_status;
+        t->pages_rx = s->rx_page_number;
+        return;
+    }
     t->bit_rate = fallback_sequence[s->current_fallback].bit_rate;
     t->error_correcting_mode = s->error_correcting_mode;
     t->error_correcting_mode_retries = s->error_correcting_mode_retries;
@@ -7534,6 +7572,17 @@ SPAN_DECLARE(void) t30_remote_interrupts_allowed(t30_state_t *s, int state)
 
 SPAN_DECLARE(int) t30_restart(t30_state_t *s, bool calling_party)
 {
+    int preserve = s->recovery.preserve;
+    if (s->receive_finalized) return -1;
+    terminate_operation_in_progress(s);
+    span_free(s->recovery.pages);
+    memset(&s->recovery, 0, sizeof(s->recovery));
+    s->recovery.closed = 1;
+    s->recovery.preserve = preserve;
+    s->receive_completed = 0;
+    s->receive_completion_code = 0;
+    s->receive_stats_saved = 0;
+    s->operation_in_progress = 0;
     release_resources(s);
     s->calling_party = calling_party;
     s->state = T30_STATE_IDLE;
@@ -7639,11 +7688,68 @@ SPAN_DECLARE(t30_state_t *) t30_init(t30_state_t *s,
 }
 /*- End of function --------------------------------------------------------*/
 
+SPAN_DECLARE(void) t30_receive_stream_gap(t30_state_t *s)
+{
+    if (s->recovery.preserve && !s->error_correcting_mode
+        && s->state == T30_STATE_F_DOC_NON_ECM
+        && s->operation_in_progress == OPERATION_IN_PROGRESS_T4_RX && s->t4.rx.page_active)
+    {
+        s->t4.rx.missing_tail = 1;
+        s->recovery.missing_tail = 1;
+    }
+}
+
+SPAN_DECLARE(int) t30_set_receive_recovery(t30_state_t *s, int preserve)
+{
+    if (s->receive_finalized || s->operation_in_progress || s->far_end_detected) return -1;
+    s->recovery.preserve = !!preserve;
+    return 0;
+}
+
+SPAN_DECLARE(void) t30_receive_finalize(t30_state_t *s)
+{
+    if (s->receive_finalized) return;
+    t30_get_transfer_statistics(s, &s->receive_final_stats);
+    terminate_operation_in_progress(s);
+    /* No fabricated phase E and no callbacks during cancellation/finalization. */
+    s->phase = T30_PHASE_CALL_FINISHED;
+    s->state = T30_STATE_CALL_FINISHED;
+    s->next_phase = T30_PHASE_CALL_FINISHED;
+    s->timer_t0_t1 = s->timer_t2_t4 = s->timer_t3 = s->timer_t5 = 0;
+    s->phase_b_handler = NULL;
+    s->phase_d_handler = NULL;
+    s->phase_e_handler = NULL;
+    s->real_time_frame_handler = NULL;
+    s->document_handler = NULL;
+    s->document_get_handler = NULL;
+    s->document_put_handler = NULL;
+    release_resources(s);
+    s->receive_finalized = 1;
+}
+
+SPAN_DECLARE(int) t30_receive_completed(t30_state_t *s) { return s->receive_completed; }
+SPAN_DECLARE(int) t30_receive_completion_code(t30_state_t *s) { return s->receive_completion_code; }
+SPAN_DECLARE(int) t30_receive_output_error(t30_state_t *s) { return s->recovery.output_error; }
+SPAN_DECLARE(int) t30_receive_output_closed(t30_state_t *s) { return s->recovery.closed; }
+SPAN_DECLARE(int) t30_receive_missing_tail(t30_state_t *s) { return s->recovery.missing_tail; }
+SPAN_DECLARE(int) t30_receive_unsupported_partial(t30_state_t *s) { return s->recovery.unsupported_partial; }
+SPAN_DECLARE(int) t30_receive_page_count(t30_state_t *s) { return s->recovery.count; }
+SPAN_DECLARE(int) t30_receive_page(t30_state_t *s, int index, t4_rx_recovery_page_t *page)
+{
+    if (index < 0 || index >= s->recovery.count) return -1;
+    *page = s->recovery.pages[index];
+    return 0;
+}
+
 SPAN_DECLARE(int) t30_release(t30_state_t *s)
 {
     /* Make sure any FAX in progress is tidied up. If the tidying up has
        already happened, repeating it here is harmless. */
     terminate_operation_in_progress(s);
+    span_free(s->recovery.pages);
+    s->recovery.pages = NULL;
+    s->recovery.count = 0;
+    release_resources(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

@@ -26,6 +26,19 @@
 #if !defined(_SPANDSP_PRIVATE_T4_RX_H_)
 #define _SPANDSP_PRIVATE_T4_RX_H_
 
+typedef struct
+{
+    int preserve;
+    int output_error; /* bit 0: write, 1: flush, 2: close, 3: allocation, 4: open */
+    int closed;
+    int missing_tail;
+    int unsupported_partial;
+    int count;
+    t4_rx_recovery_page_t *pages;
+} t4_rx_recovery_state_t;
+
+SPAN_DECLARE(void) t4_rx_preserve_page(t4_rx_state_t *s);
+
 typedef int (*t4_image_put_handler_t)(void *user_data, const uint8_t buf[], size_t len);
 
 /*!
@@ -104,6 +117,10 @@ typedef struct
 */
 struct t4_rx_state_s
 {
+    t4_rx_recovery_state_t *recovery; /* owned by the enclosing T.30 state */
+    int page_active;
+    int decoded_rows;
+    int missing_tail;
     /*! \brief Callback function to write a row of pixels to the image destination. */
     t4_row_write_handler_t row_handler;
     /*! \brief Opaque pointer passed to row_write_handler. */
