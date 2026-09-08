@@ -119,8 +119,10 @@ struct t4_rx_state_s
 {
     t4_rx_recovery_state_t *recovery; /* owned by the enclosing T.30 state */
     int page_active;
-    int decoded_rows;
-    int missing_tail;
+    int decoded_rows; /* all buffered rows, including ordinary decoder repairs */
+    int prefix_rows; /* contiguous trustworthy prefix for interrupted-page salvage */
+    int prefix_size; /* byte length of that prefix in the full image buffer */
+    int missing_tail; /* the trustworthy prefix has ended */
     /*! \brief Callback function to write a row of pixels to the image destination. */
     t4_row_write_handler_t row_handler;
     /*! \brief Opaque pointer passed to row_write_handler. */

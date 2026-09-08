@@ -7694,8 +7694,9 @@ SPAN_DECLARE(void) t30_receive_stream_gap(t30_state_t *s)
         && s->state == T30_STATE_F_DOC_NON_ECM
         && s->operation_in_progress == OPERATION_IN_PROGRESS_T4_RX && s->t4.rx.page_active)
     {
+        /* Freeze the trustworthy prefix without marking a later completed
+           page as truncated. Preservation records missing output if needed. */
         s->t4.rx.missing_tail = 1;
-        s->recovery.missing_tail = 1;
     }
 }
 

@@ -1446,6 +1446,8 @@ SPAN_DECLARE(int) t4_rx_start_page(t4_rx_state_t *s)
     /*endswitch*/
     s->page_active = 1;
     s->decoded_rows = 0;
+    s->prefix_rows = 0;
+    s->prefix_size = 0;
     s->missing_tail = 0;
     s->line_image_size = 0;
     s->tiff.image_size = 0;
@@ -1469,9 +1471,9 @@ static int tiff_row_write_handler(void *user_data, const uint8_t buf[], size_t l
                 (s->current_decoder == (T4_COMPRESSION_T4_1D | T4_COMPRESSION_T4_2D | T4_COMPRESSION_T6)
                 && s->decoder.t4_t6.bad_rows)))
         {
+            /* Freeze the salvage prefix, but continue storing the ordinary
+               decoder output. A completed page must keep its good tail. */
             s->missing_tail = 1;
-            s->recovery->missing_tail = 1;
-            return 0;
         }
         if (s->tiff.image_size + len >= s->tiff.image_buffer_size)
         {
@@ -1488,6 +1490,11 @@ static int tiff_row_write_handler(void *user_data, const uint8_t buf[], size_t l
         memcpy(&s->tiff.image_buffer[s->tiff.image_size], buf, len);
         s->tiff.image_size += len;
         s->decoded_rows++;
+        if (!s->missing_tail)
+        {
+            s->prefix_rows = s->decoded_rows;
+            s->prefix_size = s->tiff.image_size;
+        }
     }
     /*endif*/
     return 0;
@@ -1510,13 +1517,13 @@ static void record_output_page(t4_rx_state_t *s, int partial)
     r->pages = pages;
     p = &r->pages[r->count++];
     t4_rx_get_transfer_statistics(s, &stats);
-    p->partial = partial || (r->preserve && s->missing_tail);
+    p->partial = partial;
     p->rows = s->metadata.image_length;
     p->width = s->metadata.image_width;
     p->x_resolution = s->metadata.x_resolution;
     p->y_resolution = s->metadata.y_resolution;
     p->bad_rows = stats.bad_rows;
-    p->missing_tail = partial || s->missing_tail;
+    p->missing_tail = partial;
 }
 
 /* Do not flush the decoder with synthetic zero bits: only rows already emitted
@@ -1532,6 +1539,10 @@ SPAN_DECLARE(void) t4_rx_preserve_page(t4_rx_state_t *s)
         s->recovery->unsupported_partial = 1;
         return;
     }
+    /* Only interruption selects the clean prefix. Until this point the buffer
+       also retains repaired rows and the good rows that follow them. */
+    s->decoded_rows = s->prefix_rows;
+    s->tiff.image_size = s->prefix_size;
     if (s->decoded_rows > 0 && s->tiff.tiff_file)
     {
         if (write_tiff_image(s) == 0)
@@ -1552,8 +1563,9 @@ SPAN_DECLARE(int) t4_rx_end_page(t4_rx_state_t *s)
     length = 0;
 
     s->page_active = 0;
-    if (s->image_put_handler && !(s->recovery && s->recovery->preserve
-        && recovery_decoder_supported(s)))
+    /* A real page ending uses the ordinary decoder flush and row repair.
+       Explicit interrupted-page salvage above never flushes synthetic bits. */
+    if (s->image_put_handler)
         s->image_put_handler((void *) &s->decoder, NULL, 0);
     /*endif*/
 
