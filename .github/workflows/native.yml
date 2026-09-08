@@ -42,11 +42,11 @@ jobs:
       - name: Install Windows dependencies
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/ci/setup-windows.ps1
+        run: python scripts/ci/run-logged.py pwsh -File scripts/ci/setup-windows.ps1
       - name: Verify static and DLL declarations on both MSVC architectures
         run: python scripts/ci/check-declarations.py
       - name: Build and execute generators, fax tests, and v150 exclusion checks
-        run: cargo test --workspace --locked
+        run: python scripts/ci/run-logged.py cargo test --workspace --locked
       - name: Verify packaged native crate
         shell: bash
         run: |
