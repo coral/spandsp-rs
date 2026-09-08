@@ -22,14 +22,19 @@ fn bindings_match_v150_feature() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_env = "msvc"))]
 #[test]
 fn native_archive_matches_v150_feature() {
     // Inspect the archive itself: a successful link alone could hide unwanted
     // objects through dead stripping.
-    let output = std::process::Command::new("ar")
-        .arg("t")
-        .arg(PathBuf::from(env!("OUT_DIR")).join("libspandsp.a"))
+    let (archiver, args, archive) = if cfg!(target_env = "msvc") {
+        ("lib", &["/nologo", "/list"][..], "spandsp.lib")
+    } else {
+        ("ar", &["t"][..], "libspandsp.a")
+    };
+    let output = std::process::Command::new(archiver)
+        .args(args)
+        .arg(PathBuf::from(env!("OUT_DIR")).join(archive))
         .output()
         .expect("list native archive members");
     assert!(
@@ -38,9 +43,12 @@ fn native_archive_matches_v150_feature() {
         String::from_utf8_lossy(&output.stderr)
     );
     let members = String::from_utf8(output.stdout).unwrap();
-    for object in ["sprt.o", "v150_1.o", "v150_1_sse.o"] {
+    for object in ["sprt", "v150_1", "v150_1_sse"] {
         assert_eq!(
-            members.lines().any(|member| member.ends_with(object)),
+            members
+                .lines()
+                .any(|member| member.trim().ends_with(&format!("{object}.o"))
+                    || member.trim().ends_with(&format!("{object}.obj"))),
             cfg!(feature = "v150"),
             "archive member {object} does not match v150 feature"
         );
