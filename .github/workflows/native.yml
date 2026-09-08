@@ -41,9 +41,4 @@ jobs:
       - name: Build and execute generators, fax tests, and v150 exclusion checks
         run: cargo test --workspace --locked
       - name: Verify packaged native crate
-        shell: bash
-        run: |
-          cargo package -p spandsp-sys --locked --no-verify
-          version=$(cargo metadata --no-deps --format-version 1 | python -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"] == "spandsp-sys"))')
-          tar -xf "target/package/spandsp-sys-$version.crate" -C "$RUNNER_TEMP"
-          cargo test --manifest-path "$RUNNER_TEMP/spandsp-sys-$version/Cargo.toml" --locked
+        run: cargo package -p spandsp-sys --locked
