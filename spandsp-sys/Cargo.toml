@@ -1,6 +1,6 @@
 [package]
 name = "spandsp-sys"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 links = "spandsp"
 license = "MIT"
@@ -18,7 +18,11 @@ exclude = [
     "vendor/spandsp-sim/",
     "vendor/win/",
     "vendor/config/",
-    "vendor/src/msvc/",
+    "vendor/src/msvc/*.vcxproj",
+    "vendor/src/msvc/*.head",
+    "vendor/src/msvc/*.foot",
+    "vendor/src/msvc/*.vbs",
+    "vendor/src/msvc/tiff/",
     "vendor/.github/",
     "vendor/*.sh",
     "vendor/*.spec",
