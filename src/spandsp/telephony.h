@@ -26,7 +26,11 @@
 #if !defined(_SPANDSP_TELEPHONY_H_)
 #define _SPANDSP_TELEPHONY_H_
 
-#if defined(_M_IX86)  ||  defined(_M_X64)
+/* Static libraries and their consumers must opt out of DLL decoration. */
+#if defined(SPANDSP_STATIC)
+#define SPAN_DECLARE(type)              type
+#define SPAN_DECLARE_DATA
+#elif defined(_WIN32)
 #if defined(LIBSPANDSP_EXPORTS)
 #define SPAN_DECLARE(type)              __declspec(dllexport) type
 #define SPAN_DECLARE_DATA               __declspec(dllexport)
