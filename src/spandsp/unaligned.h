@@ -39,9 +39,7 @@ extern "C"
 PACK(struct __dealign_uint16 { uint16_t datum; };)
 PACK(struct __dealign_uint32 { uint32_t datum; };)
 PACK(struct __dealign_uint64 { uint64_t datum; };)
-#endif
-
-#if defined(__GNUC__)  ||  defined(__clang__)
+#elif defined(__GNUC__)  ||  defined(__clang__)
 struct __dealign_uint16 { uint16_t datum; } __attribute__((packed));
 struct __dealign_uint32 { uint32_t datum; } __attribute__((packed));
 struct __dealign_uint64 { uint64_t datum; } __attribute__((packed));
