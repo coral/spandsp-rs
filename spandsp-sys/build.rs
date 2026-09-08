@@ -14,11 +14,12 @@ fn main() {
     let fax = env::var("CARGO_FEATURE_FAX").is_ok();
     let v32bis = env::var("CARGO_FEATURE_V32BIS").is_ok();
     let v34 = env::var("CARGO_FEATURE_V34").is_ok();
+    let v150 = env::var("CARGO_FEATURE_V150").is_ok();
     let ssl_fax = env::var("CARGO_FEATURE_SSL_FAX").is_ok();
 
     // Phase A: Generate headers
     generate_config_h(&out_dir, fax, v32bis, v34);
-    generate_spandsp_h(&out_dir, &vendor_src, fax, v32bis, v34);
+    generate_spandsp_h(&out_dir, &vendor_src, fax, v32bis, v34, v150);
     generate_version_h(&out_dir);
 
     // Create spandsp subdirectory in OUT_DIR for version.h
@@ -31,7 +32,7 @@ fn main() {
     run_generators(&out_dir, &vendor_src, fax, v34);
 
     // Phase C: Compile C sources
-    compile_c_sources(&out_dir, &vendor_src, fax, v32bis, v34, ssl_fax);
+    compile_c_sources(&out_dir, &vendor_src, fax, v32bis, v34, v150, ssl_fax);
 
     // Phase D: Link system libraries
     link_system_libraries(fax, ssl_fax);
@@ -117,7 +118,14 @@ fn generate_config_h(out_dir: &Path, fax: bool, v32bis: bool, v34: bool) {
     fs::write(out_dir.join("config.h"), config).unwrap();
 }
 
-fn generate_spandsp_h(out_dir: &Path, vendor_src: &Path, fax: bool, v32bis: bool, v34: bool) {
+fn generate_spandsp_h(
+    out_dir: &Path,
+    vendor_src: &Path,
+    fax: bool,
+    v32bis: bool,
+    v34: bool,
+    v150: bool,
+) {
     let template = fs::read_to_string(vendor_src.join("spandsp.h.in")).unwrap();
 
     let output = template
@@ -183,7 +191,21 @@ fn generate_spandsp_h(out_dir: &Path, vendor_src: &Path, fax: bool, v32bis: bool
         )
     };
 
+    // Keep the GPL-2.0-only V.150.1 headers out of bindgen unless opted in.
+    let mut output = output;
+    // Native callers can request private structures through the umbrella
+    // header, so its companion expose.h must use the same feature selection.
+    let mut expose = fs::read_to_string(vendor_src.join("spandsp/expose.h")).unwrap();
+    if !v150 {
+        for header in ["sprt.h", "v150_1.h", "v150_1_sse.h"] {
+            output = output.replace(&format!("#include <spandsp/{header}>"), "");
+            expose = expose.replace(&format!("#include <spandsp/private/{header}>"), "");
+        }
+    }
+
     fs::write(out_dir.join("spandsp.h"), output).unwrap();
+    fs::create_dir_all(out_dir.join("spandsp")).unwrap();
+    fs::write(out_dir.join("spandsp/expose.h"), expose).unwrap();
 }
 
 fn generate_version_h(out_dir: &Path) {
@@ -547,6 +569,7 @@ fn compile_c_sources(
     fax: bool,
     v32bis: bool,
     v34: bool,
+    v150: bool,
     ssl_fax: bool,
 ) {
     let mut build = cc::Build::new();
@@ -630,7 +653,6 @@ fn compile_c_sources(
         "schedule.c",
         "sig_tone.c",
         "silence_gen.c",
-        "sprt.c",
         "super_tone_rx.c",
         "super_tone_tx.c",
         "swept_tone.c",
@@ -639,8 +661,6 @@ fn compile_c_sources(
         "timezone.c",
         "tone_detect.c",
         "tone_generate.c",
-        "v150_1.c",
-        "v150_1_sse.c",
         "v17rx.c",
         "v17tx.c",
         "v18.c",
@@ -660,6 +680,13 @@ fn compile_c_sources(
 
     for src in &always_sources {
         build.file(vendor_src.join(src));
+    }
+
+    // These sources carry GPL-2.0-only notices, so require explicit opt-in.
+    if v150 {
+        for src in ["sprt.c", "v150_1.c", "v150_1_sse.c"] {
+            build.file(vendor_src.join(src));
+        }
     }
 
     // FAX feature sources

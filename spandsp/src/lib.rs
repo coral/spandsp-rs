@@ -5,6 +5,9 @@
 //! generation/detection, HDLC framing, tone generation, Goertzel detection,
 //! echo cancellation, power metering, and (with the `fax` feature) full
 //! T.30/T.38/T.4 fax support.
+//!
+//! The opt-in `v150` feature enables GPL-2.0-only native V.150.1, SPRT, and SSE
+//! code and raw APIs through [`spandsp_sys`]. It is disabled by default.
 
 pub use spandsp_sys;
 

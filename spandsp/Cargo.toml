@@ -18,4 +18,6 @@ default = ["fax"]
 fax = ["spandsp-sys/fax"]
 v32bis = ["spandsp-sys/v32bis"]
 v34 = ["spandsp-sys/v34"]
+# Opt-in GPL-2.0-only native code; exposed through spandsp_sys.
+v150 = ["spandsp-sys/v150"]
 ssl-fax = ["spandsp-sys/ssl-fax"]

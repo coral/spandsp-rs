@@ -36,4 +36,6 @@ default = ["fax"]
 fax = []
 v32bis = []
 v34 = []
+# Opt-in GPL-2.0-only V.150.1, SPRT, and SSE native code and bindings.
+v150 = []
 ssl-fax = ["fax"]
