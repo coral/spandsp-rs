@@ -120,6 +120,7 @@ fn generate_config_h(out_dir: &Path, fax: bool, v32bis: bool, v34: bool, target:
 #define HAVE_MALLOC_H 1
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
+#define strdup _strdup
 #include <malloc.h>
 #endif
 "#,
