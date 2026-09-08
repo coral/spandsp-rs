@@ -61,24 +61,3 @@ disabling `v150` is not a claim that the entire package is MIT-only or GPL-free.
 ## AI DISCLAIMER
 
 Bro this is slop city deluxe. I heavily supervised but it's 2026 get real. **No warranties express or implied** etc etc.
-
-## Windows static builds (0.2.3)
-
-The bundled library uses `SPANDSP_STATIC` for native compilation, code
-generators, and bindgen. This removes DLL import/export decoration from the
-static build. Native C consumers linking the archive must also define
-`SPANDSP_STATIC`; DLL builds instead use `LIBSPANDSP_EXPORTS` and DLL consumers
-leave both undefined. The DLL policy covers Windows x64 and ARM64.
-
-Windows MSVC builds require Clang, a Visual Studio C++ environment for the
-selected architecture, and TIFF/JPEG discoverable through pkg-config when
-`fax` is enabled. `libclang.dll` must match the Rust build host architecture;
-an ARM64 build script cannot load Visual Studio's x64 `libclang.dll`.
-This matches FAXE's dependency requirements. No consumer
-patches or compiler error suppression are required. `v150` remains opt-in.
-
-Code generators are compiled for Cargo's `HOST` through `cc`, using its compiler
-and flag selection (including `HOST_CC` and target-specific `CC` variables).
-They link and execute as host programs, with `.exe` filenames on Windows.
-Target library configuration is kept separate from host generator configuration.
-The crate includes the Windows compatibility files used by these builds.
