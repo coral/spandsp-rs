@@ -72,7 +72,9 @@ leave both undefined. The DLL policy covers Windows x64 and ARM64.
 
 Windows MSVC builds require Clang, a Visual Studio C++ environment for the
 selected architecture, and TIFF/JPEG discoverable through pkg-config when
-`fax` is enabled. This matches FAXE's existing dependency setup. No consumer
+`fax` is enabled. `libclang.dll` must match the Rust build host architecture;
+an ARM64 build script cannot load Visual Studio's x64 `libclang.dll`.
+This matches FAXE's dependency requirements. No consumer
 patches or compiler error suppression are required. `v150` remains opt-in.
 
 Code generators are compiled for Cargo's `HOST` through `cc`, using its compiler

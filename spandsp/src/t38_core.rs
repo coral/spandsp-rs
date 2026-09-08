@@ -216,15 +216,16 @@ impl fmt::Display for T38TerminalOptions {
 #[repr(u32)]
 pub enum T38PacketCategory {
     /// Indicator packet.
-    Indicator = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_INDICATOR,
+    Indicator = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_INDICATOR as u32,
     /// Control data packet.
-    ControlData = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_CONTROL_DATA,
+    ControlData = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_CONTROL_DATA as u32,
     /// Terminating control data packet.
-    ControlDataEnd = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_CONTROL_DATA_END,
+    ControlDataEnd =
+        spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_CONTROL_DATA_END as u32,
     /// Image data packet.
-    ImageData = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_IMAGE_DATA,
+    ImageData = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_IMAGE_DATA as u32,
     /// Terminating image data packet.
-    ImageDataEnd = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_IMAGE_DATA_END,
+    ImageDataEnd = spandsp_sys::t38_packet_categories_e_T38_PACKET_CATEGORY_IMAGE_DATA_END as u32,
 }
 
 /// T.38 protocol version.

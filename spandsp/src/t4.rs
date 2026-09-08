@@ -20,47 +20,47 @@ bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct T4Compression: u32 {
         /// No compression.
-        const NONE = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_NONE;
+        const NONE = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_NONE as u32;
         /// T.4 1D (MH) compression.
-        const T4_1D = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T4_1D;
+        const T4_1D = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T4_1D as u32;
         /// T.4 2D (MR) compression.
-        const T4_2D = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T4_2D;
+        const T4_2D = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T4_2D as u32;
         /// T.6 (MMR) compression.
-        const T6 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T6;
+        const T6 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T6 as u32;
         /// T.85 monochrome JBIG coding with L0 fixed.
-        const T85 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T85;
+        const T85 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T85 as u32;
         /// T.85 monochrome JBIG coding with L0 variable.
-        const T85_L0 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T85_L0;
+        const T85_L0 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T85_L0 as u32;
         /// T.43 grey-scale/colour JBIG coding.
-        const T43 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T43;
+        const T43 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T43 as u32;
         /// T.45 run-length colour coding.
-        const T45 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T45;
+        const T45 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T45 as u32;
         /// T.42/T.81 JPEG coding.
-        const T42_T81 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T42_T81;
+        const T42_T81 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T42_T81 as u32;
         /// T.81 sYCC JPEG coding.
-        const SYCC_T81 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_SYCC_T81;
+        const SYCC_T81 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_SYCC_T81 as u32;
         /// T.88 coding.
-        const T88 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T88;
+        const T88 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_T88 as u32;
         /// Uncompressed data.
-        const UNCOMPRESSED = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_UNCOMPRESSED;
+        const UNCOMPRESSED = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_UNCOMPRESSED as u32;
         /// JPEG coding.
-        const JPEG = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_JPEG;
+        const JPEG = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_JPEG as u32;
         /// No sub-sampling modifier.
-        const NO_SUBSAMPLING = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_NO_SUBSAMPLING;
+        const NO_SUBSAMPLING = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_NO_SUBSAMPLING as u32;
         /// Grey-scale modifier.
-        const GRAYSCALE = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_GRAYSCALE;
+        const GRAYSCALE = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_GRAYSCALE as u32;
         /// Colour modifier.
-        const COLOUR = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_COLOUR;
+        const COLOUR = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_COLOUR as u32;
         /// 12-bit modifier.
-        const BIT12 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_12BIT;
+        const BIT12 = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_12BIT as u32;
         /// Colour-to-grey conversion modifier.
-        const COLOUR_TO_GRAY = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_COLOUR_TO_GRAY;
+        const COLOUR_TO_GRAY = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_COLOUR_TO_GRAY as u32;
         /// Grey-to-bilevel conversion modifier.
-        const GRAY_TO_BILEVEL = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_GRAY_TO_BILEVEL;
+        const GRAY_TO_BILEVEL = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_GRAY_TO_BILEVEL as u32;
         /// Colour-to-bilevel conversion modifier.
-        const COLOUR_TO_BILEVEL = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_COLOUR_TO_BILEVEL;
+        const COLOUR_TO_BILEVEL = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_COLOUR_TO_BILEVEL as u32;
         /// Rescaling modifier.
-        const RESCALING = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_RESCALING;
+        const RESCALING = spandsp_sys::t4_image_compression_t_T4_COMPRESSION_RESCALING as u32;
     }
 }
 

@@ -20,6 +20,17 @@ $pkgconf = Get-ChildItem "$prefix\tools" -Recurse -Filter pkgconf.exe | Select-O
 if (-not $pkgconf) { throw 'vcpkg did not install pkgconf' }
 $clang = (Get-Command clang.exe -ErrorAction Stop).Source
 $clangxx = (Get-Command clang++.exe -ErrorAction Stop).Source
+if ($env:SPANDSP_CI_ARCH -eq 'arm64') {
+    # VS prepends its x64 LLVM tools, whose libclang cannot load into an ARM64
+    # Rust build script. Use native ARM64 LLVM for both Clang and bindgen.
+    $llvm = Join-Path $env:RUNNER_TEMP 'spandsp-llvm-arm64'
+    $installer = Join-Path $env:RUNNER_TEMP 'llvm-arm64.exe'
+    Invoke-WebRequest 'https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.8/LLVM-20.1.8-woa64.exe' -OutFile $installer
+    $install = Start-Process $installer -ArgumentList @('/S', "/D=$llvm") -Wait -PassThru
+    if ($install.ExitCode -ne 0) { throw "LLVM installation failed: $($install.ExitCode)" }
+    $clang = Join-Path $llvm 'bin\clang.exe'
+    $clangxx = Join-Path $llvm 'bin\clang++.exe'
+}
 
 $settings = @{
     CC = $clang
