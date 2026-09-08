@@ -1,10 +1,12 @@
 //! Explicit receiver shutdown and an inventory of closed TIFF output.
 //!
-//! Preservation retains a contiguous decoded prefix for T.4 1D/2D, T.6, and T.85.
-//! It stops at the first detected damaged row or missing ECM frame, because later
-//! rows can depend on missing reference pixels. No concealed rows or synthetic
-//! decoder flush bits are emitted. Other codecs retain completed pages, but an
-//! unfinished page is reported as unsupported and omitted.
+//! Completed pages retain ordinary decoder output, including repaired rows and
+//! the good rows after them. Their damage count is reported separately.
+//! For unfinished pages, preservation retains a contiguous trustworthy prefix
+//! for T.4 1D/2D, T.6, and T.85, stopping at the first damaged row or missing frame.
+//! Interrupted-page salvage emits no concealed rows or synthetic flush bits.
+//! Other codecs retain completed pages, but an unfinished page is unsupported
+//! and omitted.
 
 //! Borrowed native handles cannot outlive their owner.
 //!

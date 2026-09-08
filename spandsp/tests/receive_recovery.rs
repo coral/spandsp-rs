@@ -87,6 +87,9 @@ impl Drop for Files {
     }
 }
 fn read_output(path: &Path) -> Vec<Vec<Vec<u8>>> {
+    read_output_with_limit(path, ROWS)
+}
+fn read_output_with_limit(path: &Path, max_rows: u32) -> Vec<Vec<Vec<u8>>> {
     if !path.exists() {
         return vec![];
     }
@@ -100,7 +103,7 @@ fn read_output(path: &Path) -> Vec<Vec<Vec<u8>>> {
             assert_eq!(TIFFGetField(t, 256, &mut w), 1);
             assert_eq!(TIFFGetField(t, 257, &mut h), 1);
             assert_eq!(w, WIDTH);
-            assert!(h > 0 && h <= ROWS, "height {h}");
+            assert!(h > 0 && h <= max_rows, "height {h}");
             let mut rows = vec![];
             for r in 0..h {
                 let mut row = vec![0u8; w as usize / 8];
@@ -498,5 +501,114 @@ fn t38_matrix() {
                 t38(ecm, stop, enabled);
             }
         }
+    }
+}
+
+// A page accepted by T.30 must not lose its good tail merely because a few
+// non-ECM scanlines were repaired by the decoder.
+fn audio_with_damage(
+    policy: ReceiveRecovery,
+    compression: t4::T4Compression,
+    interrupt: bool,
+) -> (ReceiveReport, Vec<Vec<Vec<u8>>>) {
+    let files = Files::new();
+    let tx = FaxState::new(true).unwrap();
+    let mut rx = FaxState::new_receiver(policy).unwrap();
+    config(
+        tx.get_t30_state().unwrap(),
+        rx.get_t30_state().unwrap(),
+        &files,
+        false,
+    );
+    for t30 in [tx.get_t30_state().unwrap(), rx.get_t30_state().unwrap()] {
+        t30.set_supported_compressions(compression.bits() as i32)
+            .unwrap();
+    }
+    tx.set_transmit_on_idle(true);
+    rx.set_transmit_on_idle(true);
+    let mut damaged = false;
+    let mut ended = false;
+    for _ in 0..30000 {
+        let stats = rx.get_t30_state().unwrap().get_transfer_statistics();
+        let mut a = [0i16; 160];
+        let mut b = [0i16; 160];
+        tx.tx(&mut a);
+        rx.tx(&mut b);
+        if !damaged && stats.pages_rx == 0 && stats.length >= 200 {
+            for (i, sample) in a.iter_mut().enumerate() {
+                *sample = if i % 2 == 0 { 16000 } else { -16000 };
+            }
+            damaged = true;
+        }
+        rx.rx(&mut a);
+        tx.rx(&mut b);
+        if !rx.get_t30_state().unwrap().call_active()
+            || (interrupt && rx.get_t30_state().unwrap().get_transfer_statistics().length >= 500)
+        {
+            ended = true;
+            break;
+        }
+    }
+    assert!(damaged && ended);
+    let report = rx.finalize_receive().clone();
+    if interrupt {
+        assert!(matches!(
+            report.completion,
+            ReceiveCompletion::Interrupted { .. }
+        ));
+        assert_eq!(report.confirmed_complete_pages, 0);
+    } else {
+        assert_eq!(report.completion, ReceiveCompletion::Completed { code: 0 });
+        assert_eq!(report.confirmed_complete_pages, 2);
+    }
+    assert!(report.output_closed);
+    assert_eq!(report.output_error, None);
+    let output = read_output_with_limit(&files.output, ROWS + 10);
+    (report, output)
+}
+
+#[test]
+fn successful_page_with_bad_rows_keeps_full_image_with_recovery_enabled() {
+    for compression in [t4::T4Compression::T4_1D, t4::T4Compression::T4_2D] {
+        let (ordinary, expected) = audio_with_damage(ReceiveRecovery::Disabled, compression, false);
+        assert!(
+            ordinary.pages[0].decoder_bad_rows > 0,
+            "fault must damage scanlines"
+        );
+        assert!(ordinary.pages[0].decoded_rows >= ROWS - 2);
+        let (preserved, actual) =
+            audio_with_damage(ReceiveRecovery::PreserveDecodedRows, compression, false);
+        assert_eq!(
+            preserved.pages[0].decoded_rows, ordinary.pages[0].decoded_rows,
+            "completed page must keep the good tail"
+        );
+        assert_eq!(
+            actual, expected,
+            "recovery must retain ordinary completed-page pixels"
+        );
+        assert_eq!(preserved.pages, ordinary.pages);
+        assert!(!preserved.missing_tail);
+        assert!(
+            preserved
+                .pages
+                .iter()
+                .all(|p| p.kind == ReceivePageKind::Complete && !p.missing_tail)
+        );
+    }
+}
+
+#[test]
+fn interrupted_damaged_page_still_preserves_only_the_trustworthy_prefix() {
+    let (report, output) = audio_with_damage(
+        ReceiveRecovery::PreserveDecodedRows,
+        t4::T4Compression::T4_1D,
+        true,
+    );
+    assert_eq!(report.pages.len(), 1);
+    assert_eq!(report.pages[0].kind, ReceivePageKind::RecoveredPartial);
+    assert!(report.pages[0].missing_tail && report.missing_tail);
+    assert!(report.pages[0].decoded_rows >= 190 && report.pages[0].decoded_rows < 300);
+    for (row, data) in output[0].iter().enumerate() {
+        assert_eq!(*data, pixels(0, row as u32));
     }
 }
