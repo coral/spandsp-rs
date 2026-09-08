@@ -317,6 +317,7 @@ fn compile_generator(out_dir: &Path, vendor_src: &Path, name: &str, sources: &[&
         .opt_level(0)
         .debug(false)
         .std("c99")
+        .define("_GNU_SOURCE", None)
         .define("HAVE_CONFIG_H", None)
         .define("SPANDSP_STATIC", None)
         .define("_USE_MATH_DEFINES", "1")

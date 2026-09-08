@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $vs = & $vswhere -latest -products '*' -property installationPath
 if (-not $vs) { throw 'Visual Studio C++ build tools were not found' }
-& "$vs\Common7\Tools\Launch-VsDevShell.ps1" -Arch $env:SPANDSP_CI_ARCH -HostArch $env:SPANDSP_CI_ARCH -SkipAutomaticLocation
+& "$vs\Common7\Tools\Launch-VsDevShell.ps1" -Arch $env:SPANDSP_CI_ARCH -HostArch amd64 -SkipAutomaticLocation
 
 $vcpkg = Join-Path $env:RUNNER_TEMP 'spandsp-vcpkg'
 git clone --filter=blob:none https://github.com/microsoft/vcpkg.git $vcpkg
