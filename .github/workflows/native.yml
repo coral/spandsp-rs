@@ -1,4 +1,4 @@
-name: Native builds
+name: Windows static builds
 
 on:
   push:
@@ -17,9 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-            arch: x64
           - runner: windows-2025
             target: x86_64-pc-windows-msvc
             arch: x64
@@ -36,11 +33,7 @@ jobs:
           persist-credentials: false
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
-      - name: Install Unix dependencies
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y clang libclang-dev libtiff-dev libjpeg-dev pkg-config
       - name: Install Windows dependencies
-        if: runner.os == 'Windows'
         shell: pwsh
         run: python scripts/ci/run-logged.py pwsh -File scripts/ci/setup-windows.ps1
       - name: Verify static and DLL declarations on both MSVC architectures
