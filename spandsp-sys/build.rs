@@ -297,7 +297,7 @@ fn is_leap(y: u64) -> bool {
 fn prepare_msvc_headers(out_dir: &Path, vendor_src: &Path) -> PathBuf {
     let compat = out_dir.join("msvc-compat");
     fs::create_dir_all(compat.join("sys")).unwrap();
-    for header in ["unistd.h", "sys/time.h", "getopt.c"] {
+    for header in ["unistd.h", "sys/time.h", "getopt.c", "tgmath.h"] {
         fs::copy(vendor_src.join("msvc").join(header), compat.join(header)).unwrap();
     }
     compat
