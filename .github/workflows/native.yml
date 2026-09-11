@@ -1,4 +1,4 @@
-name: Windows static builds
+name: Native builds
 
 on:
   push:
@@ -42,3 +42,26 @@ jobs:
         run: cargo test --workspace --locked
       - name: Verify packaged native crate
         run: cargo package -p spandsp-sys --locked
+
+  gcc:
+    name: Fax / GCC ${{ matrix.optimization }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        optimization: ["-O2", "-O3"]
+    env:
+      CC: gcc
+      CFLAGS: ${{ matrix.optimization }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libclang-dev libtiff-dev libjpeg-dev
+      - name: Test optimized native fax and carrier phase training
+        run: cargo test --workspace --release --locked
